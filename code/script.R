@@ -1,6 +1,7 @@
 library(tidyverse)
 library(readxl)
 library(lubridate)
+library(ggthemes)
 
 
 ################################################################################
@@ -260,7 +261,130 @@ Jan_June_2024 <- rbind(January_2024, February_2024,
 # Combine the two years
 
 FullTablesData <- rbind(Jan_Dec_2023_Data,
-                        Jan_June_2024)
+                        Jan_June_2024) %>% 
+  # Mutate the number when child was not fed the meal
+  mutate(BreakDownDays = SchoolDays - CookingDays,
+         # Seperate costs per child
+         TotalChildExp = SeparateExpenditureTotal/AvgStudents,
+         ProteinSCostsPerChild = SeparateExpenditureProtein/AvgStudents,
+         RiceCostsPerChild = SeparateExpenditureRice/AvgStudents,
+         VegCostsPerChild = SeparateExpenditureVegetable/AvgStudents,
+         FoodExpensesPerChild = SeparateExpenditureFood/AvgStudents,
+         OilCostsPerChild = SeparateExpenditureOil/AvgStudents,
+         SaltCostsPerChild = SeparateExpenditureSalt/AvgStudents,
+         #chane PilotsShools variable to factor
+         DryCostsPerChild = OilCostsPerChild + SaltCostsPerChild + RiceCostsPerChild,
+         WetCostsPerChild = ProteinSCostsPerChild + VegCostsPerChild) %>% 
+  # Round numeric variables to 2dp
+  mutate(across(where(is.numeric), ~round(., 2)))
+  
+  
+simple_model <- FullTablesData %>% 
+  filter(AvgStudents != 0) %>% 
+  lm(CostsPerChild ~ BenefticaryTotal, data = .)
+
+
+summary(simple_model)
+
+interaction_model <- FullTablesData %>% 
+  filter(AvgStudents != 0) %>% 
+  lm(CostsPerChild ~ BenefticaryTotal * PilotSchools, data = .) 
+
+summary(interaction_model)  
+  
+  
+# Quadratic model
+quadratic_model <- FullTablesData %>% 
+  filter(AvgStudents != 0) %>% 
+  lm(CostsPerChild ~ BenefticaryTotal + I(BenefticaryTotal^2), data = .)
+
+
+summary(quadratic_model)  
+  
+
+# Quadratic model and interaction model
+quadratic_interaction_model <- FullTablesData %>% 
+  filter(AvgStudents != 0) %>% 
+  lm(CostsPerChild ~ BenefticaryTotal + I(BenefticaryTotal^2) * PilotSchools, data = .)
+
+
+summary(quadratic_interaction_model)  
+
+FullTablesData %>% 
+  filter(AvgStudents != 0) %>% 
+  ggplot(aes(x = TotalChildExp, y = AvgStudents)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE) +
+  facet_grid(Year~PilotSchools) +
+  labs(title = "Cost per Child vs. Total Beneficiaries",
+       x = "Total Beneficiaries",
+       y = "Cost per Child")
+
+
+FullTablesData %>%
+  filter(Year == 2024 & WetCostsPerChild >= 7000 & WetCostsPerChild <= 12000 & AvgStudents >60) %>% 
+  #group_by(MonthYear, PilotSchools) %>%
+  #summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE)) %>%
+  ggplot(aes(x = AvgStudents, y = WetCostsPerChild)) +
+  geom_point() +
+  scale_x_log10() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = T) +
+  facet_wrap(~PilotSchools) + 
+  theme_clean()
+
+
+
+FullTablesData %>%
+  filter(Year == 2023 & WetCostsPerChild >= 7000 & WetCostsPerChild <= 13000 & AvgStudents >60) %>% 
+  #group_by(MonthYear, PilotSchools) %>%
+  #summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE)) %>%
+  ggplot(aes(x = AvgStudents, y = WetCostsPerChild)) +
+  geom_point() +
+  scale_x_log10() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = T) +
+  facet_wrap(~PilotSchools)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
