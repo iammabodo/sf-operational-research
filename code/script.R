@@ -2,6 +2,7 @@ library(tidyverse)
 library(readxl)
 library(lubridate)
 library(ggthemes)
+library(plm)
 
 
 ################################################################################
@@ -237,12 +238,31 @@ June_2024 <- read_excel("data/SFIS Clean_January_June_2024.xlsx",
   mutate(Month = "June",
          Year = 2024) 
 
+July_2024 <- read_excel("data/SFIS Clean_January_June_2024.xlsx",
+                        sheet = "July 2024") %>% 
+  rename(AvgStudents = `​ AvgStudents`) %>% 
+  # Change character variables to factor
+  mutate(across(where(is.character), as.factor),
+         SchoolId = as.character(SchoolId)) %>% 
+  mutate(Month = "July",
+         Year = 2024)
+
+
+August_2024 <- read_excel("data/SFIS Clean_January_June_2024.xlsx",
+                          sheet = "Aug 2024") %>%
+  rename(AvgStudents = `​ AvgStudents`) %>%
+  # Change character variables to factor
+  mutate(across(where(is.character), as.factor),
+         SchoolId = as.character(SchoolId)) %>%
+  mutate(Month = "August",
+         Year = 2024)
 
 # Compine the 2024 data tables
 
-Jan_June_2024 <- rbind(January_2024, February_2024,
+Jan_Aug_2024 <- rbind(January_2024, February_2024,
                        March_2024, April_2024,
-                       May_2024, June_2024) %>% 
+                       May_2024, June_2024,
+                      July_2024, August_2024) %>% 
   mutate(MonthYear = my(paste(Month, Year)),
          MonthYear = format(MonthYear, "%b %Y"),
          MonthYear = factor(MonthYear,
@@ -251,7 +271,9 @@ Jan_June_2024 <- rbind(January_2024, February_2024,
                                        "Mar 2024",
                                        "Apr 2024",
                                        "May 2024",
-                                       "Jun 2024"))) %>% 
+                                       "Jun 2024",
+                                       "Jul 2024",
+                                       "Aug 2024"))) %>% 
   # mutate the pilot schools varaible
   mutate(PilotSchools = case_when(
     District == "Phnum Kravanh" | District == "Ta Lou SenChey" ~ "Pilot School",
@@ -261,7 +283,7 @@ Jan_June_2024 <- rbind(January_2024, February_2024,
 # Combine the two years
 
 FullTablesData <- rbind(Jan_Dec_2023_Data,
-                        Jan_June_2024) %>% 
+                        Jan_Aug_2024) %>% 
   # Mutate the number when child was not fed the meal
   mutate(BreakDownDays = SchoolDays - CookingDays,
          # Seperate costs per child
@@ -274,14 +296,19 @@ FullTablesData <- rbind(Jan_Dec_2023_Data,
          SaltCostsPerChild = SeparateExpenditureSalt/AvgStudents,
          #chane PilotsShools variable to factor
          DryCostsPerChild = OilCostsPerChild + SaltCostsPerChild + RiceCostsPerChild,
-         WetCostsPerChild = ProteinSCostsPerChild + VegCostsPerChild) %>% 
+         WetCostsPerChild = ProteinSCostsPerChild + VegCostsPerChild, 
+         DryCost = SeparateExpenditureOil + SeparateExpenditureSalt + SeparateExpenditureRice,
+         WetCost= SeparateExpenditureProtein + SeparateExpenditureVegetable,
+         FeedingRatio = (AvgStudents/BenefticaryTotal)*100,
+         # Feeding effciency
+         FeedingEfficiency = (CookingDays/SchoolDays) * 100) %>% 
   # Round numeric variables to 2dp
   mutate(across(where(is.numeric), ~round(., 2)))
   
   
 simple_model <- FullTablesData %>% 
   filter(AvgStudents != 0) %>% 
-  lm(CostsPerChild ~ BenefticaryTotal, data = .)
+  lm(SeparateExpenditureTotal ~ AvgStudents, data = .)
 
 
 summary(simple_model)
@@ -296,7 +323,7 @@ summary(interaction_model)
 # Quadratic model
 quadratic_model <- FullTablesData %>% 
   filter(AvgStudents != 0) %>% 
-  lm(CostsPerChild ~ BenefticaryTotal + I(BenefticaryTotal^2), data = .)
+  lm(SeparateExpenditureTotal ~ AvgStudents + I(AvgStudents^2)* District, data = .)
 
 
 summary(quadratic_model)  
@@ -305,7 +332,7 @@ summary(quadratic_model)
 # Quadratic model and interaction model
 quadratic_interaction_model <- FullTablesData %>% 
   filter(AvgStudents != 0) %>% 
-  lm(CostsPerChild ~ BenefticaryTotal + I(BenefticaryTotal^2) * PilotSchools, data = .)
+  lm(WetCostsPerChild ~ AvgStudents  * District, data = .)
 
 
 summary(quadratic_interaction_model)  
@@ -322,27 +349,62 @@ FullTablesData %>%
 
 
 FullTablesData %>%
-  filter(Year == 2024 & WetCostsPerChild >= 7000 & WetCostsPerChild <= 12000 & AvgStudents >60) %>% 
+  filter(FeedingRatio <= 95) %>%
+  #filter(WetCostsPerChild >= 7000 & WetCostsPerChild <= 12000 & AvgStudents >60) %>% 
   #group_by(MonthYear, PilotSchools) %>%
   #summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE)) %>%
-  ggplot(aes(x = AvgStudents, y = WetCostsPerChild)) +
+  ggplot(aes(x = FeedingRatio, y =  TotalChildExp)) +
   geom_point() +
-  scale_x_log10() +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = T) +
-  facet_wrap(~PilotSchools) + 
+  #scale_y_log10() +
+  facet_grid(Year~District) + 
   theme_clean()
 
 
 
 FullTablesData %>%
-  filter(Year == 2023 & WetCostsPerChild >= 7000 & WetCostsPerChild <= 13000 & AvgStudents >60) %>% 
+  filter(FeedingRatio>=50 & FeedingRatio<=95) %>% 
+  filter(District != "Krakor") %>%
   #group_by(MonthYear, PilotSchools) %>%
   #summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE)) %>%
-  ggplot(aes(x = AvgStudents, y = WetCostsPerChild)) +
-  geom_point() +
+  ggplot(aes(x = FeedingRatio, y = TotalChildExp)) +
+  geom_point(position = position_jitter()) +
   scale_x_log10() +
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = T) +
-  facet_wrap(~PilotSchools)
+  facet_grid(Year~District)
+
+
+FullTablesData %>%
+  group_by(MonthYear, District) %>%
+  summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE),
+            AvgProteinSCostsPerChild = mean(ProteinSCostsPerChild, na.rm = TRUE),
+            AvgRiceCostsPerChild = mean(RiceCostsPerChild, na.rm = TRUE),
+            AvgVegCostsPerChild = mean(VegCostsPerChild, na.rm = TRUE),
+            AvgOilCostsPerChild = mean(OilCostsPerChild, na.rm = TRUE),
+            AvgSaltCostsPerChild = mean(SaltCostsPerChild, na.rm = TRUE),
+            AvgDryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
+            AvgWetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
+            AvgBreakDownDays = mean(BreakDownDays),
+            AvgStudents = mean(AvgStudents, na.rm = TRUE)) %>% 
+  ungroup() %>%
+  filter(District != "Krakor" & AvgStudents > 100) %>%
+  ggplot(aes(x = AvgStudents, y = (AvgDryCostsPerChild/4000), color = District)) +
+  geom_point() + 
+  geom_smooth(method = "lm",  formula = y ~ poly(x, 2), se = TRUE) +
+  facet_wrap(~District, nrow = 1) 
+
+PanelData <- FullTablesData %>% 
+  filter(AvgStudents != 0 & District != "Krakor") %>% 
+  mutate(Time  = my(paste(Month, Year))) %>% 
+  arrange(SchoolId, Time) %>%
+  pdata.frame(index = c("SchoolName", "Time"))
+
+
+# Estimate the fixed effects model
+
+fixed_effects_model <- plm(DryCost ~ AvgStudents + I(AvgStudents^2) * PilotSchools * SchoolName, data = PanelData, model = "within")
+
+summary(fixed_effects_model)
 
 
 
@@ -352,17 +414,9 @@ FullTablesData %>%
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+FullTablesData %>% filter(District == "Phnum Kravanh" & is.nan(WetCostsPerChild)) %>%  
+  select(SchoolName, Month, Year, District, SchoolDays, CookingDays, AvgStudents, Commune, contains("Separate"), DryCost, WetCost) %>% 
+  write.xlsx("data/MissingDetailsSchools.xlsx")
 
 
 
