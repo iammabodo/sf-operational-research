@@ -1,0 +1,36 @@
+---
+title: "Cost-Effectiveness of the School Feeding Procurement Pilot"
+output: word_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load libraries, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(here)
+library(ggthemes)
+library(gtsummary)
+
+data(FullTablesData)
+```
+
+# Cost Effectiveness of the School Feeding Procurement Pilot
+
+The school feeding procurement started operating in February 2024 - following an agreement with the government and the World Food Programme (WFP). In this section, the cost effeciveness of the pilot will be examined - with the intention of identifying if the pilot reduced cost per meal of the child. In addition this will help to identify if the pilot can be scaled up to mores schools in the future..
+
+## Descriptive Analysis.
+
+The table below shows the descriptive statistics of the cost per meal of the child before and after the pilot.
+
+```{r descriptive analysis, echo=FALSE, message=FALSE, warning=FALSE}
+
+FullTablesData %>%
+  select(District, Year, TotalChildExp, WetCostsPerChild, DryCostsPerChild) %>%
+  tbl_summary()
+
+
+
+```

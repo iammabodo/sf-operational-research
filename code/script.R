@@ -3,14 +3,15 @@ library(readxl)
 library(lubridate)
 library(ggthemes)
 library(plm)
-
+library(here)
+library(gtsummary)
 
 ################################################################################
 # Load data
 
 #1. January 2023
 
-January_2023 <- read_excel("data/SFIS Clean_January_Dec_2023.xlsx",
+January_2023 <- read_excel(here("data/SFIS Clean_January_Dec_2023.xlsx"),
                            sheet = "January 2023") %>% 
   rename(AvgStudents = `​ AvgStudents`) %>% 
   # Change character variables to factor
@@ -301,148 +302,342 @@ FullTablesData <- rbind(Jan_Dec_2023_Data,
          WetCost= SeparateExpenditureProtein + SeparateExpenditureVegetable,
          FeedingRatio = (AvgStudents/BenefticaryTotal)*100,
          # Feeding effciency
-         FeedingEfficiency = (CookingDays/SchoolDays) * 100) %>% 
-  # Round numeric variables to 2dp
+         FeedingEfficiency = (CookingDays/SchoolDays) * 100,
+         # Mutate procurement and non procurement schools - Lets edit this code onces we have clarity on the pilot schools from SF
+         procurement =  case_when(
+           District == "Phnum Kravanh" ~ "District Centralisation",
+           District == "Ta Lou SenChey" ~ "Commune Centralisation",
+           TRUE ~ "Non-Procurement Pilots"),
+         # Costs of indivividual comodity delivered
+         OilUnitCost = SeparateExpenditureOil/ReceivedOil,
+         RiceUnitCost = SeparateExpenditureRice/ReceivedRice,
+         VegetableUnitCost = SeparateExpenditureVegetable/ReceivedVegetable,
+         ProteinUnitCost = SeparateExpenditureProtein/RecievedProtein,
+         SaltUnitCost = SeparateExpenditureSalt/ReceivedSalt) %>%
+  # Change costs to USD
+  mutate(DryCostsPerChild = DryCostsPerChild/4000,
+         WetCostsPerChild = WetCostsPerChild/4000,
+         TotalChildExp = TotalChildExp/4000,
+         DryCost = DryCost/4000,
+         WetCost = WetCost/4000) %>%
+  # Round numeric variables to 2dp ReceivedTotal
   mutate(across(where(is.numeric), ~round(., 2)))
-  
-  
-simple_model <- FullTablesData %>% 
-  filter(AvgStudents != 0) %>% 
-  lm(SeparateExpenditureTotal ~ AvgStudents, data = .)
+
+# Bidders and suppliers data
+Bidders2023 <- read_excel("data/SFIS Clean_January_Dec_2023.xlsx",
+                                   sheet = "Bidders") %>% 
+  mutate(Year = 2023) 
+
+Bidders2024 <- read_excel("data/SFIS Clean_January_June_2024.xlsx",
+                          sheet = "Bidders") %>%
+  mutate(Year = 2024)
+
+Suppliers2023 <- read_excel("data/SFIS Clean_January_Dec_2023.xlsx",
+                            sheet = "Suppliers") %>%
+  mutate(Year = 2023)
+
+Suppliers2024 <- read_excel("data/SFIS Clean_January_June_2024.xlsx",
+                            sheet = "Suppliers") %>%
+  mutate(Year = 2024) %>% 
+  rename(SuppliersTotal = SuppilersTotal)
+
+SuppliersData <- bind_rows(Suppliers2023, Suppliers2024) %>% 
+  mutate(Year = as.factor(Year))
+
+BiddersData <- bind_rows(Bidders2023, Bidders2024) %>%
+  mutate(Year = as.factor(Year))
+
+# Merge bidders and suppliers data with the main data
+BiddersSuppliers <- BiddersData %>% 
+  left_join(SuppliersData, by = c("SchoolName", "Year", "Commune"))
+
+FullTablesData <- FullTablesData %>% 
+  mutate(Year = as.factor(Year)) %>%
+  left_join(BiddersSuppliers, by = c("SchoolName", "Year", "Commune")) 
 
 
-summary(simple_model)
+#############################################################################################
 
-interaction_model <- FullTablesData %>% 
-  filter(AvgStudents != 0) %>% 
-  lm(CostsPerChild ~ BenefticaryTotal * PilotSchools, data = .) 
-
-summary(interaction_model)  
-  
-  
-# Quadratic model
-quadratic_model <- FullTablesData %>% 
-  filter(AvgStudents != 0) %>% 
-  lm(SeparateExpenditureTotal ~ AvgStudents + I(AvgStudents^2)* District, data = .)
-
-
-summary(quadratic_model)  
-  
-
-# Quadratic model and interaction model
-quadratic_interaction_model <- FullTablesData %>% 
-  filter(AvgStudents != 0) %>% 
-  lm(WetCostsPerChild ~ AvgStudents  * District, data = .)
-
-
-summary(quadratic_interaction_model)  
+# Cost perchild per district and year
 
 FullTablesData %>% 
-  filter(AvgStudents != 0) %>% 
-  ggplot(aes(x = TotalChildExp, y = AvgStudents)) +
-  geom_point() +
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = TRUE) +
-  facet_grid(Year~PilotSchools) +
-  labs(title = "Cost per Child vs. Total Beneficiaries",
-       x = "Total Beneficiaries",
-       y = "Cost per Child")
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(District, Year) %>%
+  summarise(AvgDryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
+            AvgWetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
+            AvgTotalCost = mean(TotalChildExp, na.rm = TRUE)) %>% 
+  # Make the costs to usd
+  mutate(AvgDryCostsPerChild = AvgDryCostsPerChild/4000,
+         AvgWetCostsPerChild = AvgWetCostsPerChild/4000,
+         AvgTotalCost = AvgTotalCost/4000) %>%
+  # Proportions of the costs
+  mutate(ProportionDryCosts = (AvgDryCostsPerChild/AvgTotalCost) * 100,
+         ProportionWetCosts = (AvgWetCostsPerChild/AvgTotalCost) * 100)
+
+FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(procurement, Year) %>%
+  summarise(AvgDryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
+            AvgWetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
+            AvgTotalCost = mean(TotalChildExp, na.rm = TRUE)) %>% 
+  # Make the costs to usd
+  mutate(AvgDryCostsPerChild = AvgDryCostsPerChild/4000,
+         AvgWetCostsPerChild = AvgWetCostsPerChild/4000,
+         AvgTotalCost = AvgTotalCost/4000) %>%
+  # Proportions of the costs
+  mutate(ProportionDryCosts = (AvgDryCostsPerChild/AvgTotalCost) * 100,
+         ProportionWetCosts = (AvgWetCostsPerChild/AvgTotalCost) * 100)
+# Average eating students per district and year
+
+FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(procurement, Year) %>%
+  summarise(AvgEatingStudents = mean(AvgStudents, na.rm = TRUE)) %>% 
+  # Change the eating students to integer
+  mutate(AvgEatingStudents = as.integer(AvgEatingStudents)) %>% 
+  # Arrange the data
+  arrange(procurement, Year) 
 
 
-FullTablesData %>%
-  filter(FeedingRatio <= 95) %>%
-  #filter(WetCostsPerChild >= 7000 & WetCostsPerChild <= 12000 & AvgStudents >60) %>% 
-  #group_by(MonthYear, PilotSchools) %>%
-  #summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE)) %>%
-  ggplot(aes(x = FeedingRatio, y =  TotalChildExp)) +
-  geom_point() +
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = T) +
-  #scale_y_log10() +
-  facet_grid(Year~District) + 
+# Average breakdown days per district and year
+
+FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(procurement, Year) %>%
+  summarise(AvgBreakDownDays = mean(BreakDownDays, na.rm = TRUE),
+            AvgBreakDownDays = ceiling(AvgBreakDownDays)) %>% 
+  # Change the eating students to integer
+  # Arrange the data
+  arrange(procurement, Year) %>% 
+  View()
+
+# Analysis of variance between the number of breakdown days per district
+
+aov_test <- FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(District) %>%
+  aov(BreakDownDays ~ District, data = .)
+
+
+summary(aov_test)
+
+
+# Analysis of variance between the number of breakdown days per district, year and number of eating students
+
+aov_test <- FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(District, Year) %>%
+  aov(BreakDownDays ~ District + Year + AvgStudents, data = .)
+
+summary(aov_test)
+
+
+
+#######################################################################################################
+
+# Panel Model on the relationship between Cost per child and other variables
+
+PanelFullData <-FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(procurement, MonthYear) %>%
+  # mutate averages for every variable
+  summarise(AvgDryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
+         AvgWetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
+         AvgTotalCost = mean(TotalChildExp, na.rm = TRUE),
+         AvgEatingStudents = mean(AvgStudents, na.rm = TRUE),
+         AvgBreakDownDays = mean(BreakDownDays, na.rm = TRUE),
+         AvgStudents = mean(AvgStudents, na.rm =TRUE),
+         schools = n(SchoolName)) %>%
+  #Change all costs variables to USD
+  mutate(AvgDryCostsPerChild = AvgDryCostsPerChild/4000,
+         AvgWetCostsPerChild = AvgWetCostsPerChild/4000,
+         AvgTotalCost = AvgTotalCost/4000) %>%
+  mutate(procurement = as.factor(procurement),
+         Year = as.factor(MonthYear)) %>% 
+  ungroup() %>%
+  pdata.frame(., index = c("procurement", "MonthYear"))
+
+
+
+# Lets estimate the panel model
+
+panel_model <- plm(AvgWetCostsPerChild ~ AvgEatingStudents + I(AvgEatingStudents ^2) + procurement  + AvgBreakDownDays + procurement * AvgBreakDownDays + AvgDryCostsPerChild,
+                   data = PanelFullData,
+                   effect = "individual",
+                   index = c("procurement", "MonthYear"),
+                   model = "within")
+
+tbl_regression(panel_model)
+
+summary(panel_model)
+
+# Visualise the relationship between the cost per child and the number of eating students
+
+PanelData <-FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(procurement, MonthYear) %>%
+  # mutate averages for every variable
+  summarise(AvgDryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
+            AvgWetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
+            AvgTotalCost = mean(TotalChildExp, na.rm = TRUE),
+            AvgEatingStudents = mean(AvgStudents, na.rm = TRUE),
+            AvgBreakDownDays = mean(BreakDownDays, na.rm = TRUE),
+            AvgStudents = mean(AvgStudents, na.rm =TRUE)) %>%
+  mutate(procurement = as.factor(procurement),
+         Year = as.factor(MonthYear)) %>% 
+  ungroup()
+
+
+model <- lm(AvgWetCostsPerChild ~ procurement  + I(AvgEatingStudents ^2) + procurement*AvgStudents, data = PanelData)
+
+summary(model)
+
+
+tbl_regression(model)
+
+
+
+PanelData %>% 
+  distinct(procurement) %>%
+  ggplot(aes(x = AvgTotalCost)) +
+  geom_histogram(bins = 5) +
+  scale_y_log10() + 
+  theme_minimal() + 
+  facet_wrap(~procurement)
+  
+
+
+
+
+PanelData %>% 
+  filter(AvgTotalCost > 12000 & AvgTotalCost <20000) %>% 
+  ggplot(aes(x = AvgTotalCost)) +
+  geom_line() + 
+  scale_x_continuous(trans = "log10")
+
+
+#######################################################################################################################################
+
+CostsChangesTable <- FullTablesData %>% 
+  filter(Month == "February" | Month == "March" | Month == "April" | 
+           Month == "May" | Month == "June" | Month == "July" | Month == "August") %>%
+  filter(AvgStudents > 0 & District != "Krakor") %>%
+  group_by(procurement, Year) %>%
+  summarise(
+            TotalDryCost = mean(DryCostsPerChild, na.rm = TRUE),
+            TotalWetCost = mean(WetCostsPerChild, na.rm = TRUE),
+            TotalEatingStudents = mean(AvgStudents, na.rm = TRUE),
+            TotalBreakDownDays = mean(BreakDownDays, na.rm = TRUE)) %>% 
+  ungroup() 
+
+DryCostsTable <- CostsChangesTable %>%
+  select(procurement, Year, TotalDryCost) %>% 
+  pivot_wider(names_from = Year, values_from = TotalDryCost) %>% 
+  mutate(Change = (`2024` - `2023`)/`2023` * 100) %>% 
+  rename(`Dry Costs 2023` = `2023`,
+         `Dry Costs 2024` = `2024`,
+         `Change in Dry Costs` = Change) %>% 
+  # round numeric variables to 2dp
+  mutate(across(where(is.numeric), ~round(., 2)))
+
+WetCostsTab <- CostsChangesTable %>%
+  select(procurement, Year, TotalWetCost) %>% 
+  pivot_wider(names_from = Year, values_from = TotalWetCost) %>% 
+  mutate(Change = (`2024` - `2023`)/`2023` * 100) %>% 
+  rename(`Wet Costs 2023` = `2023`,
+         `Wet Costs 2024` = `2024`,
+         `Change in Wet Costs` = Change) %>%
+  # round numeric variables to 2dp
+  mutate(across(where(is.numeric), ~round(., 2)))
+
+
+BreakDownDaysTable <- CostsChangesTable %>%
+  select(procurement, Year, TotalBreakDownDays) %>% 
+  pivot_wider(names_from = Year, values_from = TotalBreakDownDays) %>% 
+  mutate(Change = (`2024` - `2023`)/`2023` * 100) %>% 
+  rename(`Breakdown Days 2023` = `2023`,
+         `Breakdown Days 2024` = `2024`,
+         `Change in Breakdown Days` = Change) %>%
+  # round numeric variables to 2dp
+  mutate(across(where(is.numeric), ~round(., 2)))
+
+# cOMBINE THE TABLES
+
+CostsChangesTable <- DryCostsTable %>% 
+  left_join(WetCostsTab, by = "procurement") %>% 
+  left_join(BreakDownDaysTable, by = "procurement")
+
+# write the table to excel
+
+write.xlsx(CostsChangesTable, "CostsChangesTable.xlsx")
+
+FullTablesData %>% 
+  filter(AvgStudents > 0 & District != "Krakor") %>% 
+  distinct(SchoolName, Year, .keep_all = TRUE) %>%
+  group_by(procurement, Year) %>%
+  summarise(Suppliers = sum(SuppliersTotal),
+            Bidders = sum(FemaleBidders),
+            FemaleSuppliers = sum(FemaleSuppliers),
+            FemaleSuppliersRatio = FemaleSuppliers/Suppliers * 100,
+            FemaleBidSuccess = FemaleSuppliers/Bidders * 100,
+            n = n()) %>% 
+  pivot_longer(cols = c(Suppliers, FemaleSuppliers, FemaleSuppliersRatio),
+               names_to = "Suppliers",
+               values_to = "Values") %>% 
+  filter(Suppliers == "FemaleSuppliersRatio") %>%
+  ggplot(aes(x = Year, y = Values)) +
+  geom_bar(stat = "identity") +
+  facet_wrap(~procurement) + 
   theme_clean()
 
 
-
-FullTablesData %>%
-  filter(FeedingRatio>=50 & FeedingRatio<=95) %>% 
-  filter(District != "Krakor") %>%
-  #group_by(MonthYear, PilotSchools) %>%
-  #summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE)) %>%
-  ggplot(aes(x = FeedingRatio, y = TotalChildExp)) +
-  geom_point(position = position_jitter()) +
-  scale_x_log10() +
-  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = T) +
-  facet_grid(Year~District)
-
-
-FullTablesData %>%
-  group_by(MonthYear, District) %>%
-  summarise(AvgCostsPerChild = mean(TotalChildExp, na.rm = TRUE),
-            AvgProteinSCostsPerChild = mean(ProteinSCostsPerChild, na.rm = TRUE),
-            AvgRiceCostsPerChild = mean(RiceCostsPerChild, na.rm = TRUE),
-            AvgVegCostsPerChild = mean(VegCostsPerChild, na.rm = TRUE),
-            AvgOilCostsPerChild = mean(OilCostsPerChild, na.rm = TRUE),
-            AvgSaltCostsPerChild = mean(SaltCostsPerChild, na.rm = TRUE),
-            AvgDryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
-            AvgWetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
-            AvgBreakDownDays = mean(BreakDownDays),
-            AvgStudents = mean(AvgStudents, na.rm = TRUE)) %>% 
+MealsDays <- FullTablesData %>% 
+  group_by(procurement, MonthYear) %>%
+  summarise(MeanCookingDays = mean(CookingDays)) %>% 
   ungroup() %>%
-  filter(District != "Krakor" & AvgStudents > 100) %>%
-  ggplot(aes(x = AvgStudents, y = (AvgDryCostsPerChild/4000), color = District)) +
-  geom_point() + 
-  geom_smooth(method = "lm",  formula = y ~ poly(x, 2), se = TRUE) +
-  facet_wrap(~District, nrow = 1) 
+  mutate(MeanCookingDays = round(MeanCookingDays, 0))
 
-PanelData <- FullTablesData %>% 
-  filter(AvgStudents != 0 & District != "Krakor") %>% 
-  mutate(Time  = my(paste(Month, Year))) %>% 
-  arrange(SchoolId, Time) %>%
-  pdata.frame(index = c("SchoolName", "Time"))
-
-
-# Estimate the fixed effects model
-
-fixed_effects_model <- plm(DryCost ~ AvgStudents + I(AvgStudents^2) * PilotSchools * SchoolName, data = PanelData, model = "within")
-
-summary(fixed_effects_model)
+BreakDownDays <- FullTablesData %>% 
+  group_by(procurement, MonthYear) %>%
+  summarise(MeanBreakDownDays = mean(BreakDownDays)) %>% 
+  ungroup() %>%
+  mutate(MeanBreakDownDays  = round(MeanBreakDownDays, 2))
 
 
 
+MonthYearCosts <- FullTablesData %>% 
+  group_by(procurement, Month, Year) %>% 
+  summarise(meanOilUnitCos = mean(OilUnitCost, na.rm = T), 
+            meanRiceUnitCost = mean(RiceUnitCost, na.rm = T), 
+            meanVegetableUnitCost = mean(VegetableUnitCost, na.rm = T), 
+            meanProteinUnitCost = mean(ProteinUnitCost, na.rm = T), 
+            meanUnitCostSalt = mean(SaltUnitCost, na.rm = T)) %>% 
+  ungroup() %>%
+  # Change the costs to USD
+  mutate(meanOilUnitCos = meanOilUnitCos/4000,
+         meanRiceUnitCost = meanRiceUnitCost/4000,
+         meanVegetableUnitCost = meanVegetableUnitCost/4000,
+         meanProteinUnitCost = meanProteinUnitCost/4000,
+         meanUnitCostSalt = meanUnitCostSalt/4000) 
 
 
 
-
-
-
-FullTablesData %>% filter(District == "Phnum Kravanh" & is.nan(WetCostsPerChild)) %>%  
-  select(SchoolName, Month, Year, District, SchoolDays, CookingDays, AvgStudents, Commune, contains("Separate"), DryCost, WetCost) %>% 
-  write.xlsx("data/MissingDetailsSchools.xlsx")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+MonthYearCosts %>%
+  filter(!is.infinite(meanOilUnitCos)) %>%
+  filter(!is.infinite(meanRiceUnitCost)) %>%
+  filter(!is.infinite(meanVegetableUnitCost)) %>%
+  filter(!is.infinite(meanProteinUnitCost)) %>%
+  filter(!is.infinite(meanUnitCostSalt)) %>%
+  group_by(procurement, Year) %>%
+  summarise(
+    meanOilUnitCos = mean(meanOilUnitCos, na.rm = TRUE), 
+    meanRiceUnitCost = mean(meanRiceUnitCost, na.rm = TRUE), 
+    meanVegetableUnitCost = mean(meanVegetableUnitCost, na.rm = TRUE), 
+    meanProteinUnitCost = mean(meanProteinUnitCost, na.rm = TRUE), 
+    meanUnitCostSalt = mean(meanUnitCostSalt, na.rm = TRUE)
+  ) %>% 
+  ungroup() %>% 
+  View()
 
 
 
