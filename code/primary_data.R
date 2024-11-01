@@ -44,7 +44,13 @@ suppliers_data <- read_excel("data/IRL_Evaluation of Procurement Piloting Model 
          supplyingboth = case_when(
            ProductsSupplied_1 == "Dry Commodities [Rice, Salt, and Oil]" & 
              ProductsSupplied_2 == "Wet Commodities [Vegetables, animal protein etc.]" ~ "Yes",
-           TRUE ~ "No"))
+           TRUE ~ "No"),
+         DirectSupplier = ifelse(DirectSupplier != "Supplying Directly to the School." & 
+                                   procurement == "Non-Procurement Pilots", NA,  DirectSupplier),
+         education = case_when(
+           RespEducation == "No Education" ~ "No Education",
+           RespEducation == "Some Primary" ~ "Some Primary",
+           TRUE ~ "Primary and Above"))
   
 
 average_drycosts <- suppliers_data %>% 
@@ -309,9 +315,26 @@ wet_products_suppliers <- suppliers_data %>%
     coord_flip()
     
 
+##############################################################################################################
+  
+# Household Demographic Characteristics
+  
+suppliers_data %>% 
+  count(DirectSupplier, procurement) %>% 
+  filter(!is.na(DirectSupplier))
+
+  
+  suppliers_data %>% 
+    count(RespSex, procurement) 
+
+
+suppliers_data %>% 
+  group_by(procurement) %>%
+  summarise(mean = mean(RespAge, na.rm = T))
 
 
 
 
+suppliers_data %>% count(procurement, education)
 
 

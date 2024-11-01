@@ -4,6 +4,7 @@ library(tidyverse)
 library(ggthemes)
 library(showtext)
 library(ggforce)
+library(marquee)
 
 ########################################################################
 #Text for the graphs - setting the defalts
@@ -51,8 +52,8 @@ ggsave("report/WetCostsPerChild.png",
 # Visualise the relationship between the cost per child and the number of eating students using a line graph
 
 costs_trend_graph <- PanelData %>% 
-  filter(!MonthYear %in% c("Jan 2023", "Apr 2023", "May 2023", "Oct 2023", "Nov 2023", "Apr 2024", "Jul 2024")) %>%
-  ggplot(aes(x = MonthYear, y = AvgTotalCost, group = procurement, color = procurement)) +
+  #filter(!MonthYear %in% c("Jan 2023", "Apr 2023", "May 2023", "Oct 2023", "Nov 2023", "Apr 2024", "Jul 2024")) %>%
+  ggplot(aes(x = MonthYear, y = AvgStudents, group = procurement, color = procurement)) +
   geom_line(linewidth = 0.7,
             linetype = "solid") +
   scale_x_discrete(breaks = c("Feb 2023", "Jun 2023", "Aug 2023", "Dec 2023", "Feb 2024", "May 2024", "Aug 2024")) +
@@ -72,10 +73,10 @@ costs_trend_graph <- PanelData %>%
     plot.title = element_text(size = 7, face = "bold", lineheight = 2),
     axis.title.y = element_text(size = 6, family = "opensans", face = "bold", margin = margin(l = 5, r = 5)),
     axis.title.x = element_blank(),
-    axis.text.x = element_text(family = "opensans", size = 5),
-    axis.text.y = element_text(family = "opensans", size = 5),
+    axis.text.x = element_text(family = "opensans", size = 5, color = "black"),
+    axis.text.y = element_text(family = "opensans", size = 5, color = "black"),
     legend.title = element_blank(),
-    legend.text = element_text(size = 4, family = "opensans"),
+    legend.text = element_text(size = 4, family = "opensans", color = "black"),
     legend.margin = margin(0, 0, 0, 0),
     legend.box.spacing = unit(0, "cm"),
     legend.position = "bottom",
@@ -94,11 +95,6 @@ MealsDaysGraph <- MealsDays %>%
             linetype = "solid") +
   scale_x_discrete(breaks = c("Feb 2023", "Jun 2023", "Aug 2023", "Dec 2023", "Feb 2024", "May 2024", "Aug 2024"))
 
-BreakDownDays %>% 
-  filter(MonthYear %in% c("Feb 2024", "March 2024", "April 2024", "May 2024", "Jun 2024", "Jul 2024", "Aug 2024")) %>% 
-  ggplot(aes(x = MonthYear, y = MeanBreakDownDays)) +
-  geom_bar(stat = "identity", position = "stack") + 
-  facet_wrap(~ procurement)
 
 
 ImprovementGraph <- ImprovementProcurement %>% 
@@ -287,5 +283,180 @@ ggsave(
   bg = "white"
 )
  
+##################################################################################################
+
+# Evidence generation visualisation
+
+
+costs_trend_graph <- PanelData %>% 
+  #filter(!MonthYear %in% c("Jan 2023", "Apr 2023", "May 2023", "Oct 2023", "Nov 2023", "Apr 2024", "Jul 2024")) %>%
+  ggplot(aes(x = MonthYear, y = AvgWetCostsPerChild, group = procurement, color = procurement)) +
+  geom_line(linewidth = 0.7,
+            linetype = "solid") +
+  scale_x_discrete(breaks = c("Feb 2023", "Jun 2023", "Aug 2023", "Dec 2023", "Feb 2024", "May 2024", "Aug 2024")) +
+  geom_point(size = 1) +
+  geom_vline(xintercept = "Feb 2024", linetype = "dashed",
+             linewidth = 0.7,
+             colour = "darkblue") +
+  # Move annotation text to the left of "Feb 2024"
+  annotate("text", x = "Feb 2024", y = 3.5, label = "Procurement Pilot Starts", 
+           angle = 90, vjust = -1, size = 1.8, color = "darkblue", fontface = "bold.italic",
+           family = "opensans", lineheight = 1.2) +
+  theme_clean() +
+  labs(title = "Cost per Child over Time",
+       x = "Month",
+       y = "Cost per Child (USD)") +
+  theme(
+    plot.title = element_text(size = 7, face = "bold", lineheight = 2),
+    axis.title.y = element_text(size = 6, family = "opensans", face = "bold", margin = margin(l = 5, r = 5)),
+    axis.title.x = element_blank(),
+    axis.text.x = element_text(family = "opensans", size = 5, color = "black"),
+    axis.text.y = element_text(family = "opensans", size = 5, color = "black"),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 4, family = "opensans", color = "black"),
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.spacing = unit(0, "cm"),
+    legend.position = "bottom",
+    legend.background = element_blank())
+
+
+
+# Buble chart for the costs
+
+costs <- tibble(
+  Pilot = c("Commune", "District", "Non-Pilot"),
+  `Dry Costs` = c(120, 244, 233),
+  `Wet Costs` = c(36, 55, 121),
+  Schools = c(20, 23, 31)
+) %>% 
+  pivot_longer(cols = c(`Dry Costs`, `Wet Costs`), names_to = "Costs", values_to = "Cost") 
+
+
+
+supplier_costsgraph <- costs %>% 
+  ggplot(aes(x = Pilot, y = Cost, size = Cost)) +
+  # Add background rectangles with different colors for each facet
+  geom_rect(data = costs %>% filter(Costs == "Dry Costs"),
+            aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf),
+            fill = "#FEFFD2", color = NA, alpha = 0.3) +
+  new_scale_fill() +
+  geom_rect(data = costs %>% filter(Costs == "Wet Costs"),
+            aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf),
+            fill = "#F5F5F5", color = NA, alpha = 0.3) +
+  
+  # Main plot layers
+  geom_point(aes(x = Pilot, y = Cost, size = Cost), 
+             color = if_else(costs$Costs == "Dry Costs", "red", "black"),
+             fill = if_else(costs$Costs == "Dry Costs", "red", "black"),
+             shape = 21) +
+  geom_text(data = costs %>% filter(Costs == "Dry Costs"), 
+            aes(x = Pilot, y = Cost, label = paste0("$", Cost)), 
+            size = 3, 
+            family = "opensans",
+            fontface = "bold",
+            color = "white") +
+  geom_text(data = costs %>% filter(Costs == "Dry Costs"), 
+            aes(x = Pilot, y = Cost, label = Pilot), 
+            size = 3, 
+            family = "opensans",
+            fontface = "bold",
+            color = "black",
+            nudge_y = -35) +
+  geom_text(data = costs %>% filter(Costs == "Wet Costs"), 
+            aes(x = Pilot, y = Cost, label = paste0("$", Cost)), 
+            size = 2, 
+            family = "opensans",
+            fontface = "bold",
+            color = "white") + 
+  geom_text(data = costs %>% filter(Costs == "Wet Costs"), 
+            aes(x = Pilot, y = Cost, label = Pilot), 
+            size = 3, 
+            family = "opensans",
+            fontface = "bold",
+            color = "black",
+            nudge_y = 35) + 
+  facet_wrap(~Costs) + 
+  labs(
+    x = element_blank(),
+    y = element_blank(),
+    title = "Costs of delivering Dry and Wet commodities to the schools",
+    subtitle = "",
+    caption = "Source: Supplier Survey"
+  ) + 
+  theme_minimal(base_size = 12, base_family = "opensans") +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    panel.spacing = unit(0, "lines"),  # Narrow the gap between facets
+    strip.text = element_text(face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
+    plot.caption = element_text(hjust = 0, size = 8,  family = "opensans"),
+    plot.caption.position = "plot"
+  ) + 
+  scale_size_area(max_size = 25) + 
+  coord_cartesian(ylim = c(0, 300))
+
+
+wet_commodities_graph <- costs %>% 
+  filter(Costs == "Wet Costs") %>%
+  ggplot(aes(x = Pilot, y = Cost, size = Cost)) +
+  geom_point(aes(color = "red"), shape = 21, fill = "red") +
+  geom_text(aes(label = paste0("$", Cost)), size = 2, family = "opensans", fontface = "bold") +
+  labs(
+    x = element_blank(),
+    y = element_blank(),
+    title = "Number of schools receiving Wet Commodities",
+    subtitle = "",
+    caption = "Source: Supplier Survey"
+  ) +
+  theme_minimal(base_size = 12, base_family = "opensans") +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_blank(),
+    axis.text.x = element_blank(),
+    panel.spacing = unit(0, "lines"),  # Narrow the gap between facets
+    strip.text = element_text(face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
+    plot.caption = element_text(hjust = 0, size = 8,  family = "opensans"),
+    plot.caption.position = "plot"
+  ) +
+  scale_size_area(max_size = 25) +
+  coord_cartesian(ylim = c(0, 200))
+
+
+
+dry_commodities_graph <- costs %>% 
+  filter(Costs == "Dry Costs") %>%
+  ggplot(aes(x = Pilot, y = Cost, size = Cost)) +
+  geom_point(aes(color = "red"), shape = 21, fill = "red") +
+  geom_text(aes(label = paste0("$",Cost), size = 2, family = "opensans", fontface = "bold")) +
+  labs(
+    x = element_blank(),
+    y = element_blank(),
+    title = "Number of schools receiving Wet Commodities",
+    subtitle = "",
+    caption = "Source: Supplier Survey"
+  ) +
+  theme_minimal(base_size = 12, base_family = "opensans") +
+  theme(
+    legend.position = "none",
+    axis.text.y = element_blank(),
+    #axis.text.x = element_blank(),
+    panel.spacing = unit(0, "lines"),  # Narrow the gap between facets
+    strip.text = element_text(face = "bold"),
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.y = element_blank(),
+    panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
+    plot.caption = element_text(hjust = 0, size = 8,  family = "opensans"),
+    plot.caption.position = "plot"
+  ) +
+  scale_size_area(max_size = 25) +
+  coord_cartesian(ylim = c(0, 300))
+
 
 
