@@ -219,6 +219,7 @@ average_drycosts %>%
 #1. Part of the procurement process which need to be improved
 
 ImprovementProcurement <- suppliers_data %>% 
+  filter(procurement != "Non-Procurement Pilots") %>%
   filter(!is.na(TenderProcessImp)) %>%
   count(TenderProcessImp) %>%
   mutate(Percentage = n/sum(n) * 100) %>% 
@@ -227,6 +228,7 @@ ImprovementProcurement <- suppliers_data %>%
 #2. Bid experience
 
 BidExperience <- suppliers_data %>% 
+  filter(procurement != "Non-Procurement Pilots") %>% 
   filter(!is.na(TenderProcessExp)) %>%
   count(TenderProcessExp) %>%
   # calculate the percentage

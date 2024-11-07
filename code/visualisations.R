@@ -103,14 +103,14 @@ ImprovementGraph <- ImprovementProcurement %>%
   ggplot(aes(x = TenderProcessImp, y = Percentage)) +
   geom_bar(stat = "identity", fill = "steelblue") +  # Set fill color for the bars
   coord_flip() +  # Flip the coordinates
-  geom_text(aes(y = 2, label = TenderProcessImp), 
+  geom_text(aes(y = 2, label = str_wrap(TenderProcessImp, 10), lineheight = 1.2), 
             hjust = 0, color = "white", size = 2,
-            family = "opensans", fontface = "bold") +  # Position labels at the start of the bar
+            family = "opensans") +  # Position labels at the start of the bar
   geom_text(aes(label = paste0(round(Percentage, 1), "%")), 
-            hjust = 0, color = "white", size = 2, nudge_y = -8,
+            hjust = 0, color = "white", size = 2, nudge_y = -4,
             family = "opensans", fontface = "bold") +  # Align percentages at the end of the bar
   theme_minimal() +  # Set the theme
-  labs(title = "Stages of procurement process to be improved",
+  labs(title = "Stages of procurement process to be improved (Pilot)",
        x = "Percentage",
        y = "Improvement") +  # Set the labels
   theme(
@@ -130,7 +130,7 @@ ImprovementGraph <- ImprovementProcurement %>%
 
 
 # Save the graph
-ggsave("report/ImprovementGraph.png", 
+ggsave("report/ImprovementGraph2.png", 
        plot = ImprovementGraph, 
        width = 3.53, height = 3, dpi = 200,
        bg = "white")
@@ -584,12 +584,18 @@ ggsave("report/WetCostsPerChildEG.png",
 
 # Cost per child trend graph - Evidence Generation Workshop
 
+pre_pilot_phase <- "Period before the procurement pilot starts (Feb 2023 - Jan 2024)"
+
+piolt_phase <- "Period after the procurement pilot starts (Feb 2024 - Aug 2024)"
+
+peak <- "Three moths payment due to bulk delivery of fortifed rice"
+
 costs_trend_graphEG <- PanelData %>% 
   filter(!MonthYear %in% c("Jan 2023", "Apr 2023", "May 2023", "Oct 2023", "Apr 2024")) %>%
   ggplot(aes(x = MonthYear, y = AvgTotalCost, group = procurement, color = procurement)) +
   geom_line(linewidth = 0.7, linetype = "solid") +
   scale_x_discrete(breaks = c("Feb 2023", "Jun 2023", "Aug 2023", "Dec 2023", "Feb 2024", "May 2024", "Aug 2024"),
-                   expand = c(0, 0)) +
+                   expand = c(0, 1)) +
   scale_y_continuous(expand = c(0, 0)) +
   geom_point(size = 1) +
   theme_clean() +
@@ -599,22 +605,70 @@ costs_trend_graphEG <- PanelData %>%
     ymin = 0, ymax = 9.4,
     fill = "grey",
     alpha = 0.2) +
-  labs(title = "Cost per Child over Time",
+  annotate(
+    "marquee",
+    x = "Aug 2023",
+    y = 5.5,
+    label = pre_pilot_phase,
+    width = 0.3,
+    color = "black",
+    size = 3.5,
+    family = "opensans") +
+  annotate(
+    "marquee",
+    x = "Jun 2024",
+    y = 1.5,
+    label = piolt_phase,
+    width = 0.3,
+    color = "black",
+    size = 3.5,
+    family = "opensans") +
+  annotate(
+    "marquee",
+    x = "May 2024",
+    y = 6,
+    label = peak,
+    width = 0.2,
+    color = "black",
+    size = 3.5,
+    family = "opensans") +
+  annotate(
+    "curve",
+    x = "May 2024",
+    xend = "Jul 2024",
+    y = 6.5,
+    yend = 8.9,
+    color = "black",
+    curvature = -0.3,
+    arrow = arrow(type = "closed", length = unit(0.1, "inches"), ends = "first")) +
+  labs(title = "Total Monthly Cost per Child over Time",
        x = "Month",
-       y = "Cost per Child (USD)") +
+       y = "Total Monthly Cost per Child (US$)",
+       caption = "Data Source: SFIS") +
   theme(
-    plot.title = element_text(size = 7, face = "bold", lineheight = 2),
-    axis.title.y = element_text(size = 6, family = "opensans", face = "bold", margin = margin(l = 5, r = 5)),
+    plot.title = element_text(size = 18, face = "bold", lineheight = 2, hjust = 0.5, family = "opensans"),
+    axis.title.y = element_text(size = 12, family = "opensans", face = "bold", margin = margin(l = 5, r = 5)),
     axis.title.x = element_blank(),
-    axis.text.x = element_text(family = "opensans", size = 5, color = "black"),
-    axis.text.y = element_text(family = "opensans", size = 5, color = "black"),
+    axis.text.x = element_text(family = "opensans", size = 12, color = "black", face = "bold"),
+    axis.text.y = element_text(family = "opensans", size = 12, color = "black", face = "bold"),
     legend.title = element_blank(),
-    legend.text = element_text(size = 4, family = "opensans", color = "black"),
-    legend.margin = margin(0, 0, 0, 0),
+    legend.text = element_text(size = 10, family = "opensans", color = "black", face = "bold"),
+    legend.margin = margin(t = 5),
     legend.box.spacing = unit(0, "cm"),
     legend.position = "bottom",
-    legend.background = element_blank())
+    legend.background = element_blank(),
+    plot.caption = element_text(hjust = 0, size = 10, family = "opensans", face = "bold", color = "black"),
+    plot.caption.position = "plot",
+    plot.title.position = "plot",
+    plot.background = element_rect(fill = "white", color = "white"))
 
+
+ggsave(
+  "report/costs_trend_graphEG.png",
+  plot = costs_trend_graphEG,
+  width = 10.42, height = 5.56, dpi = 300,
+  bg = "white"
+)
 
 
 
