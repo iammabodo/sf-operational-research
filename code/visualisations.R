@@ -51,6 +51,8 @@ ggsave("report/WetCostsPerChild.png",
 
 # Visualise the relationship between the cost per child and the number of eating students using a line graph
 
+
+
 costs_trend_graph <- PanelData %>% 
   #filter(!MonthYear %in% c("Jan 2023", "Apr 2023", "May 2023", "Oct 2023", "Nov 2023", "Apr 2024", "Jul 2024")) %>%
   ggplot(aes(x = MonthYear, y = AvgStudents, group = procurement, color = procurement)) +

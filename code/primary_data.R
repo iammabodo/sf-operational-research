@@ -340,3 +340,14 @@ suppliers_data %>%
 suppliers_data %>% count(procurement, education)
 
 
+
+suppliers_data %>% 
+  filter(ProductsSupplied_2 == "Wet Commodities [Vegetables, animal protein etc.]") %>% 
+  count(procurement, SMHFarmersARsn_5)
+  
+
+
+
+
+
+

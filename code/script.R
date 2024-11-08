@@ -422,9 +422,14 @@ ggplot(FullTablesData, aes(x = procurement, y = TotalChildExp, fill = PostPilot)
 
 # Panel Model on the relationship between Cost per child and other variables
 
-PanelFullData <-FullTablesData %>% 
+
+write.xlsx(FullTablesData, "FullTablesData.xlsx")
+
+
+PanelFullData24 <-FullTablesData %>% 
   filter(AvgStudents > 0 & District != "Krakor") %>%
-  group_by(procurement, MonthYear) %>%
+  filter(Year == 2024) %>% 
+  group_by(procurement, SchoolId, MonthYear) %>%
   # mutate averages for every variable
   summarise(AvgDryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
          AvgWetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
@@ -432,17 +437,45 @@ PanelFullData <-FullTablesData %>%
          AvgEatingStudents = mean(AvgStudents, na.rm = TRUE),
          AvgBreakDownDays = mean(BreakDownDays, na.rm = TRUE),
          AvgStudents = mean(AvgStudents, na.rm =TRUE)) %>%
-  #Change all costs variables to USD
-  mutate(AvgDryCostsPerChild = AvgDryCostsPerChild/4000,
-         AvgWetCostsPerChild = AvgWetCostsPerChild/4000,
-         AvgTotalCost = AvgTotalCost/4000) %>%
   mutate(procurement = as.factor(procurement),
-         Year = as.factor(MonthYear)) %>% 
+         Year = as.factor(MonthYear),
+         SchoolId = as.factor(SchoolId)) %>% 
   ungroup() %>%
-  pdata.frame(., index = c("procurement", "MonthYear"))
+  filter(MonthYear != "2024-07-01") %>% 
+  pdata.frame(., index = c("SchoolId", "MonthYear"))
+
+PanelFullData24$SchoolSizeCategory <- cut(PanelFullData24$AvgStudents, breaks = quantile(PanelFullData24$AvgStudents, probs = seq(0, 1, 0.33)), labels = c("Small", "Medium", "Large"))
+model <- plm(AvgTotalCost ~ procurement * SchoolSizeCategory * factor(MonthYear), 
+             data = PanelFullData24, 
+             model = "within", 
+             index = c("SchoolId", "MonthYear"))
+
+summary(model)
+
+clustered_se <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group"))
+
+wet_cost_model <- plm(
+  AvgWetCostsPerChild ~ procurement*AvgStudents + Year,
+  data = PanelFullData,
+  index = c("SchoolId", "MonthYear"),
+  model = "within")
+
+summary(wet_cost_model)
+
+dry_cost_model <- plm(
+  AvgDryCostsPerChild ~ procurement*AvgStudents + Year,
+  data = PanelFullData,
+  index = c("SchoolId", "MonthYear"),
+  model = "within")
+
+
+summary(dry_cost_model)
 
 
 
+model_mixed <- lmer(AvgTotalCost ~ procurement*AvgStudents + (1 | procurement) + (1 | MonthYear), 
+                    data = PanelFullData)
+summary(model_mixed)
 #######################################################################################################################################
 
 CostsChangesTable <- FullTablesData %>% 
