@@ -885,6 +885,12 @@ school_density_graph <- districts_sf %>% ggplot(aes(fill = school_density)) +
     title = "Panel (A): School Density"
   ) +
   theme_void() +
+  annotation_scale(location = "bl", text_family = "serif", height = unit(0.10, "cm")) +
+  annotation_north_arrow(which_north = "grid",
+                         location    = "tl",
+                         style       = north_arrow_orienteering(text_family = "serif"),
+                         height      = unit(0.45, "cm"),
+                         width       = unit(0.45, "cm")) +
   theme(
     plot.title = element_text(size = 12, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 10)),
     plot.subtitle = element_text(size = 12, hjust = 0.5),
