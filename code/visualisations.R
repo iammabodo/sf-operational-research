@@ -22,7 +22,7 @@ WetCostsPerChild <- FullTablesData %>%
             WetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
             DryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE)) %>%
   ungroup() %>%
-  filter(AvgStudents > 0 & AvgStudents < 500 ) %>%
+  filter(AvgStudents > 0 & AvgStudents < 480 ) %>%
   filter(Year == 2024) %>% 
   #filter(WetCostsPerChild > quantile(WetCostsPerChild, 0.05) & WetCostsPerChild < quantile(WetCostsPerChild, 0.95)) %>%
   ggplot(aes(x = AvgStudents, y = WetCostsPerChild)) +
@@ -137,7 +137,39 @@ ggsave("report/ImprovementGraph2.png",
        width = 3.53, height = 3, dpi = 200,
        bg = "white")
 
+newImprovementGraph <- ImprovementTable %>% 
+  ggplot(aes(x = TenderProcessImp, y = Percentage)) +
+  geom_bar(stat = "identity", fill = if_else(ImprovementTable$Pilot == "Non-Procurement Pilot", "steelblue", "grey"), width = 0.5) +
+  geom_text(aes(label = paste0(round(Percentage, 0), "% (", Number, ")")), 
+            hjust = 0.5, color = "black", size = 2.5, nudge_y = 2,
+            family = "opensans") + 
+# Align percentages at the end of the bar
+  facet_wrap(~Pilot, strip.position = "top") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15)) +  # Wrap x-axis labels
+  scale_y_continuous(expand = c(0, 2)) + 
+  theme_clean() +  # Set the theme
+  labs(
+    caption = "Source: Supplier Survey"
+  ) + 
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5, lineheight = 0.8, family = "opensans", size = 7),
+    axis.line.x = element_line(color = "black", size = 0.5),
+    axis.text.y = element_text(family = "opensans", size = 7),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    strip.text = element_text(size = 8, family = "opensans", hjust = 0.3, face = "bold", margin = margin(b = 10)), 
+    plot.caption = element_text(hjust = 0, size = 5, family = "opensans", color = "black", face = "bold"),
+    plot.caption.position = "plot"
+  
+  )
 
+# save the graph
+
+ggsave("report/newImprovementGraph.png", 
+       plot = newImprovementGraph, 
+       width = 6.51, height = 3, dpi = 200,
+       bg = "white")
 
 incomeeffectgraph <- suppliers_data %>% 
   filter(!is.na(ProductsSupplied_2)) %>% 
@@ -295,33 +327,56 @@ costs_trend_graph <- PanelData %>%
   ggplot(aes(x = MonthYear, y = AvgTotalCost, group = procurement, color = procurement)) +
   geom_line(linewidth = 0.7,
             linetype = "solid") +
-  scale_x_discrete(breaks = c("Feb 2023", "Jun 2023", "Aug 2023", "Dec 2023", "Feb 2024", "May 2024", "Aug 2024")) +
+  scale_x_discrete(breaks = c("Feb 2023", "Jun 2023", "Sep 2023", "Jan 2024", "Feb 2024", "May 2024", "Aug 2024"), expand = c(0,1)) +
   geom_point(size = 1) +
-  geom_vline(xintercept = "Feb 2024", linetype = "dashed",
-             linewidth = 0.7,
-             colour = "darkblue") +
-  # Move annotation text to the left of "Feb 2024"
-  annotate("text", x = "Feb 2024", y = 3.5, label = "Procurement Pilot Starts", 
-           angle = 90, vjust = -1, size = 1.8, color = "darkblue", fontface = "bold.italic",
-           family = "opensans", lineheight = 1.2) +
+  annotate(
+    geom = "rect",
+    xmin = 0, xmax = "Feb 2024",
+    ymin = 0, ymax = 9.4,
+    fill = "grey",
+    alpha = 0.2) +
+  annotate(
+    "marquee",
+    x = "Aug 2023",
+    y = 6,
+    label = pre_pilot_phase,
+    width = 0.3,
+    color = "black",
+    size = 3,
+    family = "opensans") +
+  annotate(
+    "marquee",
+    x = "Jun 2024",
+    y = 1.5,
+    label = piolt_phase,
+    width = 0.3,
+    color = "black",
+    size = 3,
+    family = "opensans") +
+  scale_y_continuous(expand = c(0, 0)) +
   theme_clean() +
-  labs(title = "Cost per Child over Time",
+  labs(title = "",
        x = "Month",
        y = "Cost per Child (USD)") +
   theme(
     plot.title = element_text(size = 7, face = "bold", lineheight = 2),
-    axis.title.y = element_text(size = 6, family = "opensans", face = "bold", margin = margin(l = 5, r = 5)),
+    axis.title.y = element_text(size = 8, family = "opensans", face = "bold", margin = margin(l = 5, r = 5)),
     axis.title.x = element_blank(),
-    axis.text.x = element_text(family = "opensans", size = 5, color = "black"),
-    axis.text.y = element_text(family = "opensans", size = 5, color = "black"),
+    axis.text.x = element_text(family = "opensans", size = 6, color = "black"),
+    axis.text.y = element_text(family = "opensans", size = 7, color = "black"),
     legend.title = element_blank(),
-    legend.text = element_text(size = 4, family = "opensans", color = "black"),
+    legend.text = element_text(size = 6, family = "opensans", color = "black"),
     legend.margin = margin(0, 0, 0, 0),
     legend.box.spacing = unit(0, "cm"),
     legend.position = "bottom",
     legend.background = element_blank())
 
 
+ggsave(
+  "report/costs_trend_graph.png", 
+  plot = costs_trend_graph, 
+  width = 6.49, height = 3, dpi = 300
+)
 
 # Buble chart for the costs
 
@@ -535,6 +590,50 @@ ggsave(
 )
 
 #############################################################################################################################
+FullTablesData %>% 
+  group_by(procurement, Year) %>%  
+  summarise(meanrice = mean(RiceCostsPerChild, na.rm = TRUE)) %>% 
+  mutate(meanrice = meanrice/4100) %>% 
+  pivot_wider(names_from = Year, values_from = meanrice) %>% 
+  #calculate percentage change
+  mutate(percentage_change = ((`2024` - `2023`)/`2023`) * 100)
+
+# Calculate average eating students per pilot model between 2023 and 2024
+FullTablesData %>% 
+  group_by(procurement, Year) %>%  
+  summarise(meanstudents = mean(AvgStudents, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = Year, values_from = meanstudents) %>% 
+  #calculate percentage change
+  mutate(percentage_change = ((`2024` - `2023`)/`2023`) * 100)
+
+# Calculate average salt costs per child per pilot model between 2023 and 2024
+FullTablesData %>% 
+  group_by(procurement, Year) %>%  
+  summarise(meansalt = mean(SaltCostsPerChild, na.rm = TRUE)) %>% 
+  mutate(meansalt = meansalt/4100) %>% 
+  pivot_wider(names_from = Year, values_from = meansalt) %>% 
+  #calculate percentage change
+  mutate(percentage_change = ((`2024` - `2023`)/`2023`) * 100)
+
+
+# Calculate average oil costs per child per pilot model between 2023 and 2024
+FullTablesData %>% 
+  group_by(procurement, Year) %>%  
+  summarise(meanoil = mean(OilCostsPerChild, na.rm = TRUE)) %>% 
+  mutate(meanoil = meanoil/4100) %>% 
+  pivot_wider(names_from = Year, values_from = meanoil) %>% 
+  #calculate percentage change
+  mutate(percentage_change = ((`2024` - `2023`)/`2023`) * 100)
+
+# Calculate dry costs per child per pilot model between 2023 and 2024
+FullTablesData %>% 
+  group_by(procurement, Year) %>%  
+  summarise(meandry = mean(DryCostsPerChild, na.rm = TRUE)) %>% 
+  #mutate(meandry = meandry/4100) %>%
+  pivot_wider(names_from = Year, values_from = meandry) %>%
+  #calculate percentage change
+  mutate(percentage_change = ((`2024` - `2023`)/`2023`) * 100)
+
 
 # Cost Efficiency Graph - Evidence Generation
 
@@ -543,18 +642,19 @@ WetCostsPerChildEG <- FullTablesData %>%
   group_by(SchoolId, procurement, Year) %>%
   summarise(AvgStudents = mean(AvgStudents, na.rm = TRUE),
             WetCostsPerChild = mean(WetCostsPerChild, na.rm = TRUE),
-            DryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE)) %>%
+            DryCostsPerChild = mean(DryCostsPerChild, na.rm = TRUE),
+            RiceCostsPerChild = mean(RiceCostsPerChild, na.rm = TRUE)) %>%
   ungroup() %>%
   filter(AvgStudents > 0 & AvgStudents < 500 ) %>%
-  filter(Year == 2024) %>% 
+  #filter(Year == 2024) %>% 
   #filter(WetCostsPerChild > quantile(WetCostsPerChild, 0.05) & WetCostsPerChild < quantile(WetCostsPerChild, 0.95)) %>%
   ggplot(aes(x = AvgStudents, y = WetCostsPerChild)) +
-  geom_point(position = position_jitter(width = 0.1, height = 0.1), colour = "#181C14", size = 0.8) + 
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), size = 0.8) + 
   geom_smooth(method = "lm", formula = y ~ poly(x, 2), color = "#1230AE", linewidth = 0.5, fill = "#7F8FE5") + 
   #scale_y_log10() +
-  facet_wrap(~ procurement, scales = "free") + 
+  facet_grid(Year~ procurement, scales = "free") + 
   theme_clean() +
-  coord_cartesian(ylim = c(1.5, 3)) +
+  coord_cartesian(ylim = c(1.5, 2.6)) +
   labs(title = "Relationship between the monthly cost per child and the number of eating students (2024)",
        x = "Number of Eating Students",
        y = "Monthly Cost per Child (USD)",
@@ -672,6 +772,202 @@ ggsave(
   bg = "white"
 )
 
+##############################################################################################################
+
+# Lets visualise the school density in each district
+
+# Read school level csv data
+
+school_cord_data <- read_csv("data/WFP VAM_Verified HGSFP School Location_20241024 1.csv") %>%
+  select(School_cod, School_EN, District_E, Commune_E, Lat, Long, dis_geocode, com_geocode) %>%
+  filter(
+    District_E %in% c("Krakor", "Bakan", "Kandieng", "Phnum Kravanh", "Ta Lou Senchey")
+  ) %>% 
+  rename(
+    SchoolCode = School_cod,
+    SchoolName = School_EN,
+    District = District_E,
+    Commune = Commune_E
+  )
+students_per_school <- FullTablesData %>% 
+  filter(Year == 2024) %>% 
+  group_by(SchoolName) %>% 
+  summarise(Students = mean(AvgStudents, na.rm = T))
+
+school_cord_data <- school_cord_data %>%
+  left_join(students_per_school, by = "SchoolName") 
+
+schools_sf <- st_as_sf(
+  school_cord_data,
+  coords = c("Long", "Lat"),  # Use the columns with actual school coordinates
+  crs = 4326  # WGS 84 CRS (latitude/longitude)
+)
+
+
+# read the district level shapefile
+
+districts_sf <- st_read("data/shapefiles/WFP_PST_5Districts.shp") %>%
+  rename(District =  Adm2_Name) %>%
+  st_transform(crs = 4326) %>%   # Transform the CRS to WGS 84
+  select(District, Shape_Area, Adm1_code, geometry) %>% 
+  mutate(Shape_Area = Shape_Area / 1000000) %>%   # Convert the area to km²
+  rename(CODE = Adm1_code)
+
+communes_sf <- st_read("data/shapefiles/WFP_PST_37Communes.shp") %>%
+  rename(Commune =  Adm3_Name) %>%
+  st_transform(crs = 4326) %>%   # Transform the CRS to WGS 84
+  select(Commune, Shape_area, geometry) %>% 
+  mutate(Shape_area = Shape_area / 1000000)  # Convert the area to km²
+
+# Merge the school and district data
+
+school_counts <- schools_sf %>% 
+  group_by(District) %>%
+  summarise(n_schools = n()) %>%
+  ungroup() %>% 
+  st_drop_geometry()
+
+# Join the school counts to the districts data
+
+districts_sf <- districts_sf %>% 
+  left_join(school_counts, by = "District") %>% 
+  mutate(school_density = n_schools / Shape_Area) %>% 
+  select(District, school_density, geometry)
+
+
+roads <- st_read("data/roads/khm_trs_roads_gov_wfp_ed2024.shp") %>%
+  st_transform(crs = 4326)
+
+water <- st_read("data/water/khm_hyd_rivers_gov.shp") %>%
+  st_transform(crs = 4326) 
+
+boundaries <- st_read("data/boundary/BND/khm_bnd_admin2_gov_wfp_ed2022.shp") %>%
+  st_transform(crs = 4326) %>% 
+  filter(Adm2_NCDD == 1501 | Adm2_NCDD == 1502 | 
+           Adm2_NCDD == 1503 | Adm2_NCDD == 1504 | Adm2_NCDD == 1505)
+
+
+# Join the water and the boundaries data
+water_in_boundaries <- st_intersection(water, districts_sf) %>% 
+  filter(Size != "Major")
+
+roads_in_boundaries <- st_intersection(roads, districts_sf) %>% 
+  filter(Classes == "Provincial and rural road")
+
+
+school_density_graph <- districts_sf %>% ggplot(aes(fill = school_density)) +
+  # District layer with school density
+  geom_sf(data = districts_sf, color = "white", size = 1.9) +
+  # School points layer
+  geom_sf(data = schools_sf, size = 1, fill = "#240A34", alpha = 0.5, shape = 21) +
+  #Add commune layer
+  #geom_sf(data = communes_sf, fill = "transparent", color = "#FBF4DB", size = 0) +
+  # District names layer
+  geom_sf_text(data = districts_sf, aes(label = District), size = 3.5, fontface = "bold",
+               color = if_else(districts_sf$District == "Ta Lou Senchey", "white", "black"), family = "opensans") +
+  coord_sf(expand = FALSE) +
+  # Water layer
+ # geom_sf(data = water, fill = "#A6D6D6", color = "#A6D6D6") +
+  # Custom color scale for school density
+  scale_fill_gradient(
+    name = "Schools/km²",
+    low = "#E0A75E", # Light yellow
+    high = "#973131", # Deep red
+    guide = guide_colorbar(
+      title.position = "top",
+      title.hjust = 0.5,
+      barwidth = 5, # Adjust bar width
+      barheight = 0.2 # Adjust bar height
+    )
+  ) +
+  # Add labels and customize the plot
+  labs(
+    title = "Panel (A): School Density"
+  ) +
+  theme_void() +
+  theme(
+    plot.title = element_text(size = 12, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 10)),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, family = "opensans", face = "bold", margin = margin(b = 2)),
+    legend.text = element_text(size = 10, face = "bold", family = "opensans", margin = margin(t = 2)),
+    legend.box.margin = margin(t = 0),
+    plot.caption = element_text(size = 9, family = "opensans", hjust = 0),
+    plot.caption.position = "plot"
+  )
+
+
+#########################################################################################
+
+districts_sf <- districts_sf %>%
+  mutate(
+    text_color = if_else(District == "Ta Lou Senchey", "#240750", "#E4E0E1"), # Specify your desired colors
+    nudge_y = if_else(District == "Ta Lou Senchey", 0.18, -0.005),
+    nudge_x = if_else(District == "Ta Lou Senchey", -0.15, 0)
+  )
+
+school_connect_graph <- ggplot() + 
+  geom_sf(data = districts_sf, fill  = "#202040", color = "#E8F9FD", size = 1.5) +
+  #geom_sf(data = water_in_boundaries, fill = "#478CCF", color = "#478CCF") + 
+  geom_sf_text(
+    data = districts_sf, 
+    aes(label = District), 
+    size = 3.5, 
+    fontface = "bold",
+    color = districts_sf$text_color, 
+    family = "opensans", 
+    nudge_y = if_else(districts_sf$District == "Ta Lou Senchey", 0.18, -0.01),
+    nudge_x = if_else(
+      districts_sf$District == "Phnum Kravanh", -0.1, 
+      if_else(districts_sf$District == "Ta Lou Senchey", -0.12, 0)
+    )
+  ) + 
+  geom_sf(data = roads_in_boundaries, color =  "#FEFBF6", size = 0.05, alpha = 0.2) + 
+  geom_sf(data = schools_sf, fill = "#E6B325", color = "#E6B325", aes(size = Students), alpha = 0.5, shape = 21) + 
+  coord_sf(expand = FALSE) +
+  annotate(
+    "curve",
+    x = 103.5,
+    xend = 103.6,
+    y = 12.62,
+    yend = 12.53,
+    color = "#240750",
+    curvature = -0.2,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
+  theme_void() +
+  labs(
+    title = "Panel (B): School Connectedness (Road Network)",
+    size = "Average Eating Students"
+  ) +
+  theme(
+    plot.title = element_text(size = 12, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 10)),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, family = "opensans", face = "bold", margin = margin(b = -0.5)),
+    legend.text = element_text(size = 10, face = "bold", family = "opensans", margin = margin(t = 2)),
+    legend.box.margin = margin(0, 0, 0, 0),
+    plot.caption = element_text(size = 11, family = "opensans", hjust = 0, face = "bold"),
+    plot.caption.position = "plot"
+  ) + 
+  scale_size_continuous(range = c(0.3, 2.5)) +
+  guides(size = guide_legend(title.position = "top", title.hjust = 0.5))
+  
+  
+  
+complete_graph <- school_density_graph + school_connect_graph +
+  plot_layout(widths = c(1, 1)) +
+  plot_annotation(
+    #title = "School Density and Connectedness in the 5 Districts",
+    caption = "Source: SFIS Data",
+    theme = theme(plot.title = element_text(size = 12, face = "bold", hjust = 0.5, family = "opensans"),
+                  plot.caption = element_text(size = 11, family = "opensans", hjust = 0, face = "bold"),
+                  plot.margin = margin(0, 0, 0, 0))
+  ) 
+
+# Save the graph
+ggsave("report/school_density_graph.png", 
+       plot = complete_graph, 
+       width = 8.27, height = 4.63, dpi = 300, bg = "white")
 
 
 

@@ -218,17 +218,40 @@ average_drycosts %>%
 
 #1. Part of the procurement process which need to be improved
 
-ImprovementProcurement <- suppliers_data %>% 
-  filter(procurement != "Non-Procurement Pilots") %>%
+ImprovementProcurementNP <- suppliers_data %>% 
+  filter(procurement == "Non-Procurement Pilots") %>%
   filter(!is.na(TenderProcessImp)) %>%
+  #group_by(procurement) %>% 
   count(TenderProcessImp) %>%
   mutate(Percentage = n/sum(n) * 100) %>% 
+  mutate(Pilot = "Non-Procurement Pilot") %>% 
+  rename(Number = n) %>%
   arrange(Percentage)
+
+ImprovementProcurementP <- suppliers_data %>% 
+  filter(procurement != "Non-Procurement Pilots") %>%
+  filter(!is.na(TenderProcessImp)) %>%
+  #group_by(procurement) %>% 
+  count(TenderProcessImp) %>%
+  mutate(Percentage = n/sum(n) * 100) %>% 
+  mutate(Pilot = "Procurement Pilot") %>%
+  rename(Number = n) %>%
+  arrange(Percentage)
+
+ImprovementTable <- ImprovementProcurementNP %>% 
+  rbind(ImprovementProcurementP)
 
 #2. Bid experience
 
-BidExperience <- suppliers_data %>% 
+BidExperienceP <- suppliers_data %>% 
   filter(procurement != "Non-Procurement Pilots") %>% 
+  filter(!is.na(TenderProcessExp)) %>%
+  count(TenderProcessExp) %>%
+  # calculate the percentage
+  mutate(Percentage = n/sum(n) * 100)
+
+BidExperienceNP <- suppliers_data %>% 
+  filter(procurement == "Non-Procurement Pilots") %>% 
   filter(!is.na(TenderProcessExp)) %>%
   count(TenderProcessExp) %>%
   # calculate the percentage
@@ -290,9 +313,6 @@ Challenges <- bind_rows(Challenge1, Challenge2, Challenge3,
   mutate(Challenges = as_factor(Challenges),
          procurement = as_factor(procurement))
   
-  group_by(Challenges) %>%
-  # calculate the percentage
-  summarise(Percentage = n/sum(n) * 100) 
 
 ##########################################################################################
   
@@ -302,9 +322,6 @@ wet_products_suppliers <- suppliers_data %>%
     count(DirectSupplier, procurement, ProductsSupplied_2) %>% 
     filter(!is.na(ProductsSupplied_2)) %>% 
     filter(procurement != "Non-Procurement Pilots")
-
-
-
 
 
   suppliers_data %>% 
@@ -319,33 +336,56 @@ wet_products_suppliers <- suppliers_data %>%
 
 ##############################################################################################################
   
-# Household Demographic Characteristics
+#  Benefits of working with smallholder farmers
   
-suppliers_data %>% 
-  count(DirectSupplier, procurement) %>% 
-  filter(!is.na(DirectSupplier))
+  SMHFarmersARsn_1 <- suppliers_data %>% 
+    count(procurement, SMHFarmersARsn_1) %>% 
+    filter(!is.na(SMHFarmersARsn_1)) %>% 
+    rename(Benefits = SMHFarmersARsn_1)
+  
+  SMHFarmersARsn_2 <- suppliers_data %>%
+    count(procurement, SMHFarmersARsn_2) %>% 
+    filter(!is.na(SMHFarmersARsn_2)) %>% 
+    rename(Benefits = SMHFarmersARsn_2)
+  
+  SMHFarmersARsn_3 <- suppliers_data %>%
+    count(procurement, SMHFarmersARsn_3) %>% 
+    filter(!is.na(SMHFarmersARsn_3)) %>% 
+    rename(Benefits = SMHFarmersARsn_3)
+  
+  SMHFarmersARsn_4 <- suppliers_data %>%
+    count(procurement, SMHFarmersARsn_4) %>% 
+    filter(!is.na(SMHFarmersARsn_4)) %>% 
+    rename(Benefits = SMHFarmersARsn_4)
+  
+  SMHFarmersARsn_5 <- suppliers_data %>%
+    count(procurement, SMHFarmersARsn_5) %>% 
+    filter(!is.na(SMHFarmersARsn_5)) %>% 
+    rename(Benefits = SMHFarmersARsn_5)
+  
+  
+# Disadvantages of workinh with smallhoder farmers
+  
+  SMHFarmerDRsn_1 <- suppliers_data %>% 
+    count(procurement, SMHFarmerDRsn_1) %>% 
+    filter(!is.na(SMHFarmerDRsn_1)) %>% 
+    rename(Disadvantages = SMHFarmerDRsn_1)
+
+  SMHFarmerDRsn_2 <- suppliers_data %>%
+    count(procurement, SMHFarmerDRsn_2) %>% 
+    filter(!is.na(SMHFarmerDRsn_2)) %>% 
+    rename(Disadvantages = SMHFarmerDRsn_2)
+  
+  SMHFarmerDRsn_3 <- suppliers_data %>%
+    count(procurement, SMHFarmerDRsn_3) %>% 
+    filter(!is.na(SMHFarmerDRsn_3)) %>% 
+    rename(Disadvantages = SMHFarmerDRsn_3)
 
   
-  suppliers_data %>% 
-    count(RespSex, procurement) 
-
-
-suppliers_data %>% 
-  group_by(procurement) %>%
-  summarise(mean = mean(RespAge, na.rm = T))
-
-
-
-
-suppliers_data %>% count(procurement, education)
-
-
-
-suppliers_data %>% 
-  filter(ProductsSupplied_2 == "Wet Commodities [Vegetables, animal protein etc.]") %>% 
-  count(procurement, SMHFarmersARsn_5)
-  
-
+  SMHFarmerDRsn_4 <- suppliers_data %>%
+    count(procurement, SMHFarmerDRsn_4) %>% 
+    filter(!is.na(SMHFarmerDRsn_4)) %>% 
+    rename(Disadvantages = SMHFarmerDRsn_4)
 
 
 

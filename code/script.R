@@ -387,9 +387,6 @@ FullTablesData <- FullTablesData %>%
     PostPilot = factor(PostPilot, levels = c(0, 1), labels = c("Pre-Pilot", "Post-Pilot")),
     procurement = factor(procurement))
 
-FullTablesData %>%
-  select(Time, logChildrenFed, logChildrenFed2) %>%
-  correlate()
 #############################################################################################
 
 # Cost perchild per district and year
@@ -415,6 +412,7 @@ summary(anova_model)
 
 ggplot(FullTablesData, aes(x = procurement, y = TotalChildExp, fill = PostPilot)) +
   geom_boxplot() +
+  geom_point(aes(color = PostPilot), position = position_jitterdodge(), alpha = 0.5) +
   labs(title = "Interaction of Procurement Model and Pilot on Total Child Expenditure",
        x = "Procurement Model", y = "Total Child Expenditure") +
   theme_minimal()
