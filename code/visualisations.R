@@ -1035,17 +1035,29 @@ school_district_stats <- complete_schools %>%
 district_bivariate <- district_filtered %>% 
   left_join(school_district_stats, by = "District")
 
+# Step 1: Replace missing values in `n_schools` & `avg_students`
+district_bivariate <- district_bivariate %>% 
+  mutate(
+    n_schools = replace_na(n_schools, 0),
+    avg_students = replace_na(avg_students, 0)
+  )
+
 # Define categories for density and school size
 district_bivariate <- district_bivariate %>% 
   bi_class(
     x= n_schools,
     y = avg_students,
     style = "equal",
-    dim = 6
+    dim = 4
   ) %>% 
   mutate(bi_class = if_else(has_data == "Yes", bi_class, NA_character_))
 
-table(district_bivariate$bi_class)
+district_bivariate <- district_bivariate %>% 
+  mutate(
+    has_data = replace_na(has_data, "No"),  # Ensure no NAs in has_data
+    has_data = tolower(has_data),  
+    bi_class = if_else(has_data == "yes", bi_class, NA_character_)  # NA remains in the plot
+  )
 
 pallet <- matrix(c(
   "#1b0f1a", "#291a31", "#35254a", "#3d3164",
