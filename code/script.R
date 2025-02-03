@@ -246,13 +246,7 @@ July_2024 <- read_excel("data/SFIS Clean_January_June_2024.xlsx",
   mutate(across(where(is.character), as.factor),
          SchoolId = as.character(SchoolId)) %>% 
   mutate(Month = "July",
-         Year = 2024) %>% 
-  mutate(wetCosts = SeparateExpenditureProtein + SeparateExpenditureVegetable,
-         procurement =  case_when(
-           District == "Phnum Kravanh" ~ "District Centralisation",
-           District == "Ta Lou SenChey" ~ "Commune Centralisation",
-           TRUE ~ "Non-Procurement Pilots"),
-         wetcostsPerChild = wetCosts/AvgStudents)
+         Year = 2024)
 
 
 August_2024 <- read_excel("data/SFIS Clean_January_June_2024.xlsx",
@@ -416,6 +410,33 @@ ggplot(FullTablesData, aes(x = procurement, y = TotalChildExp, fill = PostPilot)
   labs(title = "Interaction of Procurement Model and Pilot on Total Child Expenditure",
        x = "Procurement Model", y = "Total Child Expenditure") +
   theme_minimal()
+
+# # Cost perchild per district and year
+# 
+# model1 <- lmer(
+#   WetCostsPerChild ~ PostPilot*procurement*Time + AvgStudents_scaled  + AvgStudents2_scaled*procurement + (1|SchoolId),
+#   data = FullTablesData)
+# 
+# summary(model1)
+# 
+# model2 <- lm(
+#   TotalChildExp ~ PostPilot*procurement  + Time + AvgStudents + AvgStudents2,
+#   data = FullTablesData)
+# 
+# summary(model2)
+# 
+# anova_model <- aov(
+#   TotalChildExp ~ PostPilot * procurement,
+#   data = FullTablesData
+# )
+# 
+# summary(anova_model)
+# 
+# ggplot(FullTablesData, aes(x = procurement, y = TotalChildExp, fill = PostPilot)) +
+#   geom_boxplot() +
+#   labs(title = "Interaction of Procurement Model and Pilot on Total Child Expenditure",
+#        x = "Procurement Model", y = "Total Child Expenditure") +
+#   theme_minimal()
 #######################################################################################################
 
 # Panel Model on the relationship between Cost per child and other variables
