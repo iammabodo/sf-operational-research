@@ -1002,16 +1002,14 @@ provincial_boundaries <- st_read("data/boundary/BND/khm_bnd_admin1_gov_wfp_ed202
                          "Preah Vihear", "Pursat", "Siemreap", "Stung Treng", "Oddar Meanchey")) %>% 
   select(Province, geometry)
 
-# Join the water and the boundaries data
-water_in_province_boundaries <- st_intersection(water, provincial_boundaries) %>% 
-  filter(Size == "Major") %>% 
-  filter(Describe != "Non-Perenial/Intermittent/Fluctuating")
-
-roads_in_province_boundaries <- st_intersection(roads,  provincial_boundaries) %>% 
-  filter(Classes == "Provincial and rural road")
-
-
 unique_provinces <- unique(complete_schools$Province)
+# # Join the water and the boundaries data
+# water_in_province_boundaries <- st_intersection(water, provincial_boundaries) %>% 
+#   filter(Size == "Major") %>% 
+#   filter(Describe != "Non-Perenial/Intermittent/Fluctuating")
+# 
+# roads_in_province_boundaries <- st_intersection(roads,  provincial_boundaries) %>% 
+#   filter(Classes == "Provincial and rural road")
 
 province_filtered <- provincial_boundaries %>% 
   filter(Province %in% unique_provinces) %>% 
@@ -1021,19 +1019,14 @@ districts_sf <- st_read("data/boundary/BND/khm_bnd_admin2_gov_wfp_ed2024.shp") %
   rename(District =  Adm2_Name) %>%
   st_transform(crs = 4326) 
 
-communes_sf <- st_read("data/boundary/BND/khm_bnd_admin3_gov_wfp_ed2024.shp") %>%
-  rename(Commune =  Adm3_Name) %>%
-  st_transform(crs = 4326)
+districts_centroid <- st_centroid(districts_sf) %>% st_transform(crs = 4326)
 
-district_filtered <- st_intersection(districts_sf, province_filtered)
 
-commune_filtered <- st_intersection(communes_sf, province_filtered)
+district_filtered <- st_join(districts_centroid, provincial_boundaries, left = FALSE)
 
-district_filtered <- district_filtered %>% 
-  st_make_valid()
-
-invalid_districts <- district_filtered %>% 
-  filter(!st_is_valid(.)) 
+district_filtered <- districts_sf %>%
+  left_join(st_drop_geometry(district_filtered), by = c("District")) %>%
+  filter(!is.na(Province))
 
 school_district_stats <- complete_schools %>% 
   st_join(district_filtered) %>%
@@ -1045,43 +1038,25 @@ school_district_stats <- complete_schools %>%
   st_drop_geometry()
 
 district_bivariate <- district_filtered %>% 
-  left_join(school_district_stats, by = "District")
+  left_join(school_district_stats, by = c("District")) %>% 
+  filter(Province %in% unique_provinces) %>% 
+  mutate(centroid = st_centroid(geometry)) %>%
+  mutate(lat = st_coordinates(centroid)[,2]) %>%
+  filter(!(District == "Samraong" & lat < 11.5)) %>%
+  select(-centroid, -lat)
 
-# Step 1: Replace missing values in `n_schools` & `avg_students`
-district_bivariate <- district_bivariate %>% 
-  mutate(
-    n_schools = replace_na(n_schools, 0),
-    avg_students = replace_na(avg_students, 0)
-  )
 
 # Define categories for density and school size
 district_bivariate <- district_bivariate %>% 
   bi_class(
     x= n_schools,
     y = avg_students,
-    style = "equal",
-    dim = 3
+    style = "quantile",
+    dim = 4
   ) %>% 
-  mutate(bi_class = if_else(has_data == "Yes", bi_class, NA_character_))
-
-district_bivariate <- district_bivariate %>%
-  distinct(District, .keep_all = TRUE)
+  mutate(bi_class = if_else(has_data == "Yes", bi_class, NA_character_)) 
 
 
-
-district_bivariate <- district_bivariate %>% 
-  mutate(
-    has_data = replace_na(has_data, "No"),  # Ensure no NAs in has_data
-    has_data = tolower(has_data),  
-    bi_class = if_else(has_data == "yes", bi_class, NA_character_)  # NA remains in the plot
-  )
-
-pallet <- matrix(c(
-  "#1b0f1a", "#291a31", "#35254a", "#3d3164",
-  "#413e7f", "#3e4f94", "#38619d", "#3572a1",
-  "#3483a5", "#3493a8", "#36a4ab", "#3fb5ad",
-  "#4fc5ad", "#70d4ad", "#9cdeb7", "#c0e9cc"
-), nrow = 4, byrow = TRUE)
 
 pallete2 <- "PurpleGrn"
 
@@ -1090,47 +1065,48 @@ pallet_clrspace <-  matrix(colorspace::sequential_hcl(36, palette = "Emrld"), nr
 pal_vector <- as.vector(pallet_clrspace)
 
 
-names(pal_vector) <- paste(
-  rep(1:6, each = 6),  # For the first dimension (e.g., "Number of Schools")
-  rep(1:6, times = 6), # For the second dimension (e.g., "Total Students")
-  sep = "-"
-)
-
-
 school_map <- ggplot() +
-  # Base layer: Provincial boundaries
-  
   # Overlay: Districts with bivariate classification
   geom_sf(data = district_bivariate, aes(fill = bi_class), color = NA) +
   # Apply the custom bivariate fill scale
-  bi_scale_fill(pal = pallete2, dim = 3, guide = FALSE, na.value = "#4C4C4C") +
-  # Overlay: District boundaries
-  #geom_sf(data = district_filtered, fill = NA, color = NA, linewidth = 0) +
-  geom_sf(data = provincial_boundaries, fill = NA, color = "white", linewidth = 0.2) +
-  # Add doads in the province
-  #geom_sf(data = roads_in_province_boundaries, color = "#FEFBF6", size = 0.05, alpha = 0.2) +
-  # Add water bodies in the province
-  #geom_sf(data = water_in_province_boundaries, fill = "#478CCF", color = "#478CCF") +
+  bi_scale_fill(pal = pallete2, dim = 4, guide = FALSE, na.value = "#CC796E") +
+  geom_sf(data = provincial_boundaries, fill = NA, color = "#B55245", linewidth = 0.3) + 
   # Add provincial names
-  geom_sf_text(data = province_filtered, aes(label = Province), size = 3.5, color = "white", family = "opensans", fontface = "bold") +
+  geom_sf_text(data = province_filtered, aes(label = Province), size = 3, color = "white", family = "opensans", fontface = "bold",
+               nudge_y = if_else(province_filtered$Province == "Pursat", -0.1, 0)) +
+  # # District names for the pilot districts
+  # geom_sf_text(data = district_filtered, aes(label = if_else(District == "Phnum Kravanh" | District == "Ta Lou Senchey", District, NA)), 
+  #              size = 2.5, color = "white", family = "opensans",
+  #              nudge_x = if_else(district_filtered$District == "Ta Lou Senchey", -0.5, 0),
+  #              nudge_y = if_else(district_filtered$District == "Ta Lou Senchey", -0.2, 0)) +
+  # annotate(
+  #   "curve",
+  #   x = 103.6,
+  #   xend = 103.3,
+  #   y = 12.45,
+  #   yend = 12.3,
+  #   color = "white",
+  #   curvature = 0.2,
+  #   linewidth = 0.2,
+  #   arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
   # Minimal theme or a dark theme for a better contrast
   theme_void() + 
   coord_sf() + 
   labs(
     title = "School Feeding Programme in Cambodia",
     subtitle = "The number of schools and students per district in provinces where the school feeding programme is implemented",
-    caption = "Note: Data used is from SFIS. Districts in grey do not have the school feeding programme. The bivariate classification is based on quantiles."
+    caption = "Note: Data used is from SFIS. Districts in brown do not have the school feeding programme. The bivariate classification is based on quantiles."
   ) + 
   theme(
     plot.title = element_text(size = 12, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 5, t = 10)),
     plot.subtitle = element_text(size = 11, hjust = 0.5, family = "opensans", margin = margin(b = -5)),
-    plot.caption = element_text(size = 10, family = "opensans", hjust = 0.5, face = "italic", margin = margin(b = 5))
+    plot.caption = element_text(size = 10, family = "opensans", hjust = 0.5, face = "italic", margin = margin(b = 5, t = -20))
   )
 
 
 map_legend <- bi_legend(
   pal = pallete2,
-  dim = 3,
+  dim = 4,
   xlab = "Schools per District",
   ylab = "Students per District",
   size = 8,
@@ -1145,7 +1121,7 @@ map_legend <- bi_legend(
 
 school_map_complete <- ggdraw() +
   draw_plot(school_map, x = 0, y = 0, width = 1, height = 1) +
-  draw_plot(map_legend, x = 0.65, y = 0.08, width = 0.3, height = 0.3)
+  draw_plot(map_legend, x = 0.6, y = 0.23, width = 0.3, height = 0.3)
 
 # Save the graph
 ggsave("report/school_map.png", 
@@ -1179,36 +1155,7 @@ commune_bivariate <- commune_bivariate %>%
     dim = 3
   ) 
 
-# Commune level Map
-ggplot() +
-  # Overlay: Communes with bivariate classification
-  geom_sf(data = commune_bivariate, aes(fill = bi_class), color = NA) +
-  # Apply the custom bivariate fill scale
-  bi_scale_fill(pal = pallete2, dim = 3, guide = FALSE, na.value = "#5C677D") +  # Light gray for NA
-  # Overlay: Commune boundaries
-  geom_sf(data = commune_filtered, fill = NA, color = NA, linewidth = 0) +
-  geom_sf(data = province_filtered, fill = NA, color = "white", linewidth = 1) +
-  # Add district boundaries
-  geom_sf(data = district_filtered, fill = NA, color = "white", linewidth = 0.5) +
-  # Add provincial names
-  geom_sf_text(data = province_filtered, aes(label = Province), size = 2, color = "white", family = "opensans") +
-  # Minimal theme for better contrast
-  theme_void()
 
-
-legend <- bi_legend(
-  pal = pallet,
-  dim = 4,
-  xlab = "Number of Schools per Commune",
-  ylab = "Total Students per Commune",
-  size = 7
-) +
-  theme(
-    plot.title = element_text(family = "opensans"),
-    axis.title.x = element_text(family = "opensans"),
-    axis.title.y = element_text(family = "opensans"),
-    legend.text = element_text(family = "opensans")
-  )
 
 
 
