@@ -498,8 +498,8 @@ summary(model_mixed)
 #######################################################################################################################################
 
 CostsChangesTable <- FullTablesData %>% 
-  filter(Month == "February" | Month == "March" | Month == "April" | 
-           Month == "May" | Month == "June" | Month == "July" | Month == "August") %>%
+  # filter(Month == "February" | Month == "March" | Month == "April" | 
+  #          Month == "May" | Month == "June" | Month == "July" | Month == "August") %>%
   filter(AvgStudents > 0 & District != "Krakor") %>%
   group_by(procurement, Year) %>%
   summarise(
