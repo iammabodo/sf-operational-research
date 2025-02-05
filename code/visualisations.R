@@ -1026,7 +1026,11 @@ district_filtered <- st_join(districts_centroid, provincial_boundaries, left = F
 
 district_filtered <- districts_sf %>%
   left_join(st_drop_geometry(district_filtered), by = c("District")) %>%
-  filter(!is.na(Province))
+  filter(!is.na(Province)) %>%
+  mutate(centroid = st_centroid(geometry)) %>%
+  mutate(lat = st_coordinates(centroid)[,2]) %>%
+  filter(!(District == "Samraong" & lat < 11.5)) %>%
+  select(-centroid, -lat)
 
 school_district_stats <- complete_schools %>% 
   st_join(district_filtered) %>%
@@ -1129,36 +1133,49 @@ ggsave("report/school_map.png",
        width = 8.27, height = 4.63, dpi = 300, bg = "white")
 
   
-# Schools per commune
-invalid_geoms <- commune_filtered %>% filter(!st_is_valid(.))
+# School connectedness and desity by province
 
-commune_filtered <- commune_filtered %>% st_make_valid()
+roads <- st_read("data/roads/khm_trs_roads_gov_wfp_ed2024.shp") %>%
+  st_transform(crs = 4326)
 
-school_commune_stats <- complete_schools %>% 
-  st_join(commune_filtered) %>%
-  rename(Commune = Commune.x) %>%
-  select(-Commune.y) %>%
-  group_by(Commune) %>% 
-  summarise(n_schools = n(), avg_students = sum(Students)) %>% 
-  st_drop_geometry()
+#Ithersect the roads with the provincial boundaries
+roads_in_province_boundaries <- st_intersection(roads, provincial_boundaries) %>% 
+  filter(Classes == "Provincial and rural road")
 
-commune_bivariate <- commune_filtered %>%
-  left_join(school_commune_stats, by = "Commune")
+water <- st_read("data/water/khm_hyd_rivers_gov.shp") %>%
+  st_transform(crs = 4326) %>% 
+  filter(Describe != "Non-Perenial/Intermittent/Fluctuating")
 
-
-# Define categories for density and school size
-commune_bivariate <- commune_bivariate %>% 
-  bi_class(
-    x= n_schools,
-    y = avg_students,
-    style = "equal",
-    dim = 3
-  ) 
+water_in_province_boundaries <- st_intersection(water, provincial_boundaries) %>% 
+  filter(Size == "Major")
 
 
+# Graph for school connectedness and density by province
+school_connection <- ggplot() +
+  geom_sf(data = district_filtered, fill = "#071952", color = "white", linewidth = 0.1) +
+  geom_sf(data = province_filtered, fill = NA, color = "white", linewidth = 0.5) +  # Province boundaries
+    # District boundaries
+  geom_sf(data = roads_in_province_boundaries, color = "#B5651D", linewidth = 0.25, alpha = 0.5) +  # Roads
+  geom_sf(data = complete_schools, aes(fill = Type, color = Type), shape = 21, 
+          size = 0.5, stroke = 0.5, alpha = 0.8) +  
+  scale_fill_manual(name = "School Type", values = c("Government school" = "#FFB200", "WFP school" = "#FFB38E")) +  # Custom colors for school types
+  scale_color_manual(values = c("Government school" = "#FFB200", "WFP school" = "#FFB38E")) +  # Custom colors for district boundaries and roads
+  guides(color = "none") +  # Remove the legend for school type
+  geom_sf_text(data = province_filtered, aes(label = Province), size = 3, fontface = "bold", color = "white", family = "opensans") +  # Province names
+  #geom_sf(data = water_in_province_boundaries, fill = "#9EDDFF", color = "#9EDDFF") +  # Water bodies
+  theme_void() +
+  theme(legend.position = c(0.87, 0.3),
+        legend.direction = "horizontal",
+        legend.title = element_text(size = 8, family = "opensans", face = "bold", hjust = 0.5,
+                                    margin = margin(b = 0)),
+        legend.text = element_text(size = 8, family = "opensans", margin = margin(t = 0, r =0)),
+        legend.title.position = "top")
+
+
+ggsave("report/school_connection.png",
+       plot = school_connection,
+       width = 8.27, height = 4.63, dpi = 300, bg = "white")
 
 
 
-
-
-
+# Combine the two graphs
