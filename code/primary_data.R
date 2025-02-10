@@ -308,7 +308,7 @@ Challenges <- bind_rows(Challenge1, Challenge2, Challenge3,
          Challenges = if_else(Challenges == "Long distance (to schools and market)", "Distance", Challenges),
          Challenges = if_else(Challenges == "High capital requirements", "Capital Requirements", Challenges),
          Challenges = if_else(Challenges == "Extended Payment Period", "Payment Period", Challenges)) %>% 
-  filter(Challenges != "Other (specify)") %>% 
+  #filter(Challenges != "Other (specify)") %>% 
   filter(procurement != "Non-Procurement Pilots") %>% 
   mutate(Challenges = as_factor(Challenges),
          procurement = as_factor(procurement))
