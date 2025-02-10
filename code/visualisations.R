@@ -1139,6 +1139,7 @@ ggsave("report/school_map.png",
 roads <- st_read("data/roads/khm_trs_roads_gov_wfp_ed2024.shp") %>%
   st_transform(crs = 4326)
 
+
 #Ithersect the roads with the provincial boundaries
 roads_in_province_boundaries <- st_intersection(roads, provincial_boundaries) %>% 
   filter(Classes == "Provincial and rural road")
@@ -1178,5 +1179,64 @@ ggsave("report/school_connection.png",
        width = 8.27, height = 4.63, dpi = 300, bg = "white")
 
 
+# Map highlighting commune procurement  districts
 
-# Combine the two graphs
+commune_cent <- district_filtered %>% 
+  filter(Province == "Pursat") %>% 
+  st_transform(crs = 4326) %>% 
+  ggplot() +
+  geom_sf(aes(fill = District == "Ta Lou Senchey"), 
+          color = "white", size = 0.5) +
+  scale_fill_manual(values = c("FALSE" = "#FFB200", "TRUE" = "#071952")) +
+  annotate(
+    "text",
+    x = 103.2,
+    y = 12.95,
+    label = "Ta Lou Senchey\nDistrict",
+    size = 8,
+    color = "#071952",
+    family = "garamond",
+    fontface = "bold",
+    hjust = 0.5,
+    lineheight = 0.5) +
+  annotate(
+    "segment",
+    x = 103.4,
+    xend = 103.55,
+    y = 12.8,
+    yend = 12.55,
+    color = "#071952",
+   # curvature = -0.2,
+    linewidth = 0.6,
+    arrow = arrow(type = "closed", length = unit(0.09, "inches"), ends = "last")) +
+  theme_void() + 
+  theme(legend.position = "none")
+
+ggsave("report/commune_cent.png",
+       plot = commune_cent,
+       width = 3.12, height = 1.93, dpi = 300, bg = "white")
+
+
+# Map highlighting district procurement  districts
+
+district_cent <- district_filtered %>% 
+  filter(Province == "Pursat") %>% 
+  st_transform(crs = 4326) %>% 
+  ggplot() +
+  geom_sf(aes(fill = District == "Phnum Kravanh"), 
+          color = "white", size = 0.5) +
+  geom_sf_text(aes(label = if_else(District == "Phnum Kravanh", District, "")), size = 5, fontface = "bold", color = "white", 
+               family = "garamond") +
+  scale_fill_manual(values = c("FALSE" = "#FFB200", "TRUE" = "#071952")) +
+  theme_void() + 
+  theme(legend.position = "none")
+
+ggsave("report/district_cent.png",
+       plot = district_cent,
+       width = 3.12, height = 1.93, dpi = 300, bg = "white")
+
+
+
+
+
+
