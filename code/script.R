@@ -383,34 +383,6 @@ FullTablesData <- FullTablesData %>%
 
 #############################################################################################
 
-# Cost perchild per district and year
-
-model1 <- lmer(
-  WetCostsPerChild ~ PostPilot*procurement*Time + AvgStudents_scaled  + AvgStudents2_scaled*procurement + (1|SchoolId),
-  data = FullTablesData)
-
-summary(model1)
-
-model2 <- lm(
-  TotalChildExp ~ PostPilot*procurement  + Time + AvgStudents + AvgStudents2,
-  data = FullTablesData)
-
-summary(model2)
-
-anova_model <- aov(
-  TotalChildExp ~ PostPilot * procurement,
-  data = FullTablesData
-)
-
-summary(anova_model)
-
-ggplot(FullTablesData, aes(x = procurement, y = TotalChildExp, fill = PostPilot)) +
-  geom_boxplot() +
-  geom_point(aes(color = PostPilot), position = position_jitterdodge(), alpha = 0.5) +
-  labs(title = "Interaction of Procurement Model and Pilot on Total Child Expenditure",
-       x = "Procurement Model", y = "Total Child Expenditure") +
-  theme_minimal()
-
 # # Cost perchild per district and year
 # 
 # model1 <- lmer(
@@ -462,39 +434,6 @@ PanelFullData24 <-FullTablesData %>%
   ungroup() %>%
   filter(MonthYear != "2024-07-01") %>% 
   pdata.frame(., index = c("SchoolId", "MonthYear"))
-
-PanelFullData24$SchoolSizeCategory <- cut(PanelFullData24$AvgStudents, breaks = quantile(PanelFullData24$AvgStudents, probs = seq(0, 1, 0.33)), labels = c("Small", "Medium", "Large"))
-model <- plm(AvgTotalCost ~ procurement * SchoolSizeCategory * factor(MonthYear), 
-             data = PanelFullData24, 
-             model = "within", 
-             index = c("SchoolId", "MonthYear"))
-
-summary(model)
-
-clustered_se <- coeftest(model, vcov = vcovHC(model, type = "HC1", cluster = "group"))
-
-wet_cost_model <- plm(
-  AvgWetCostsPerChild ~ procurement*AvgStudents + Year,
-  data = PanelFullData,
-  index = c("SchoolId", "MonthYear"),
-  model = "within")
-
-summary(wet_cost_model)
-
-dry_cost_model <- plm(
-  AvgDryCostsPerChild ~ procurement*AvgStudents + Year,
-  data = PanelFullData,
-  index = c("SchoolId", "MonthYear"),
-  model = "within")
-
-
-summary(dry_cost_model)
-
-
-
-model_mixed <- lmer(AvgTotalCost ~ procurement*AvgStudents + (1 | procurement) + (1 | MonthYear), 
-                    data = PanelFullData)
-summary(model_mixed)
 #######################################################################################################################################
 
 CostsChangesTable <- FullTablesData %>% 
