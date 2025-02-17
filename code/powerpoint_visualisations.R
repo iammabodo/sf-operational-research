@@ -5,6 +5,7 @@ library(sf)
 library(showtext)
 library(lubridate)
 library(patchwork)
+library(ggspatial)
 
 
 ########################################################################
@@ -179,9 +180,204 @@ supplier_costs_graph <- supplier_costs %>%
 ggsave("figures/supplier_costs_graph.png", supplier_costs_graph, width = 6.26, height = 5.02, dpi = 200)
 
 
+######################################################################################################  
 
-  
+# Maps -  This code is just copied from the other visualisation script i.e., visualisations.R
 
+# Read school level csv data
+
+school_cord_data <- read_csv("data/WFP VAM_Verified HGSFP School Location_20241024 1.csv") %>%
+  select(School_cod, School_EN, District_E, Commune_E, Lat, Long, dis_geocode, com_geocode) %>%
+  filter(
+    District_E %in% c("Krakor", "Bakan", "Kandieng", "Phnum Kravanh", "Ta Lou Senchey")
+  ) %>% 
+  rename(
+    SchoolCode = School_cod,
+    SchoolName = School_EN,
+    District = District_E,
+    Commune = Commune_E
+  )
+students_per_school <- FullTablesData %>% 
+  filter(Year == 2024) %>% 
+  group_by(SchoolName) %>% 
+  summarise(Students = mean(AvgStudents, na.rm = T))
+
+school_cord_data <- school_cord_data %>%
+  left_join(students_per_school, by = "SchoolName") 
+
+schools_sf <- st_as_sf(
+  school_cord_data,
+  coords = c("Long", "Lat"),  # Use the columns with actual school coordinates
+  crs = 4326  # WGS 84 CRS (latitude/longitude)
+)
+
+
+# read the district level shapefile
+
+districts_sf <- st_read("data/shapefiles/WFP_PST_5Districts.shp") %>%
+  rename(District =  Adm2_Name) %>%
+  st_transform(crs = 4326) %>%   # Transform the CRS to WGS 84
+  select(District, Shape_Area, Adm1_code, geometry) %>% 
+  mutate(Shape_Area = Shape_Area / 1000000) %>%   # Convert the area to km²
+  rename(CODE = Adm1_code)
+
+communes_sf <- st_read("data/shapefiles/WFP_PST_37Communes.shp") %>%
+  rename(Commune =  Adm3_Name) %>%
+  st_transform(crs = 4326) %>%   # Transform the CRS to WGS 84
+  select(Commune, Shape_area, geometry) %>% 
+  mutate(Shape_area = Shape_area / 1000000)  # Convert the area to km²
+
+# Merge the school and district data
+
+school_counts <- schools_sf %>% 
+  group_by(District) %>%
+  summarise(n_schools = n()) %>%
+  ungroup() %>% 
+  st_drop_geometry()
+
+# Join the school counts to the districts data
+
+districts_sf <- districts_sf %>% 
+  left_join(school_counts, by = "District") %>% 
+  mutate(school_density = n_schools / Shape_Area) %>% 
+  select(District, school_density, geometry)
+
+
+roads <- st_read("data/roads/khm_trs_roads_gov_wfp_ed2024.shp") %>%
+  st_transform(crs = 4326)
+
+water <- st_read("data/water/khm_hyd_rivers_gov.shp") %>%
+  st_transform(crs = 4326) 
+
+boundaries <- st_read("data/boundary/BND/khm_bnd_admin2_gov_wfp_ed2022.shp") %>%
+  st_transform(crs = 4326) %>% 
+  filter(Adm2_NCDD == 1501 | Adm2_NCDD == 1502 | 
+           Adm2_NCDD == 1503 | Adm2_NCDD == 1504 | Adm2_NCDD == 1505)
+
+
+# Join the water and the boundaries data
+water_in_boundaries <- st_intersection(water, districts_sf) %>% 
+  filter(Size != "Major")
+
+roads_in_boundaries <- st_intersection(roads, districts_sf) %>% 
+  filter(Classes == "Provincial and rural road")
+
+
+school_density_graph_01 <- districts_sf %>% ggplot(aes(fill = school_density)) +
+  # District layer with school density
+  geom_sf(data = districts_sf, color = "white", size = 1.9) +
+  # School points layer
+  geom_sf(data = schools_sf, size = 1, fill = "#240A34", alpha = 0.5, shape = 21) +
+  #Add commune layer
+  #geom_sf(data = communes_sf, fill = "transparent", color = "#FBF4DB", size = 0) +
+  # District names layer
+  geom_sf_text(data = districts_sf, aes(label = District), size = 5.5, fontface = "bold",
+               color = if_else(districts_sf$District == "Ta Lou Senchey", "white", "black"), family = "garamond") +
+  coord_sf(expand = FALSE) +
+  # Water layer
+  # geom_sf(data = water, fill = "#A6D6D6", color = "#A6D6D6") +
+  # Custom color scale for school density
+  scale_fill_gradient(
+    name = "Schools/km²",
+    low = "#E0A75E", # Light yellow
+    high = "#973131", # Deep red
+    guide = guide_colorbar(
+      title.position = "top",
+      title.hjust = 0.5,
+      barwidth = 5, # Adjust bar width
+      barheight = 0.2 # Adjust bar height
+    )
+  ) +
+  theme_void() +
+  annotation_scale(location = "bl", text_family = "serif", height = unit(0.10, "cm")) +
+  annotation_north_arrow(which_north = "grid",
+                         location    = "tl",
+                         style       = north_arrow_orienteering(text_family = "serif"),
+                         height      = unit(0.45, "cm"),
+                         width       = unit(0.45, "cm")) +
+  theme(
+    plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
+    plot.title = element_text(size = 12, hjust = 0.5, family = "garamond", face = "bold", margin = margin(b = 2, t = 10)),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, family = "garamond", face = "bold", margin = margin(b = 2)),
+    legend.text = element_text(size = 13, face = "bold", family = "garamond", margin = margin(t = 2)),
+    legend.box.margin = margin(t = 0),
+    plot.caption = element_text(size = 10, family = "garamond", hjust = 0),
+    plot.caption.position = "plot"
+  )
+
+
+#########################################################################################
+
+districts_sf <- districts_sf %>%
+  mutate(
+    text_color = if_else(District == "Ta Lou Senchey", "#240750", "#E4E0E1"), # Specify your desired colors
+    nudge_y = if_else(District == "Ta Lou Senchey", 0.18, -0.005),
+    nudge_x = if_else(District == "Ta Lou Senchey", -0.15, 0)
+  )
+
+school_connect_graph_01 <- ggplot() + 
+  geom_sf(data = districts_sf, fill  = "#202040", color = "#E8F9FD", size = 1.5) +
+  #geom_sf(data = water_in_boundaries, fill = "#478CCF", color = "#478CCF") + 
+  geom_sf_text(
+    data = districts_sf, 
+    aes(label = District), 
+    size = 5.5, 
+    fontface = "bold",
+    color = districts_sf$text_color, 
+    family = "garamond", 
+    nudge_y = if_else(districts_sf$District == "Ta Lou Senchey", 0.18, -0.01),
+    nudge_x = if_else(
+      districts_sf$District == "Phnum Kravanh", -0.1, 
+      if_else(districts_sf$District == "Ta Lou Senchey", -0.12, 0)
+    )
+  ) + 
+  geom_sf(data = roads_in_boundaries, color =  "#FEFBF6", size = 0.05, alpha = 0.2) + 
+  geom_sf(data = schools_sf, fill = "#E6B325", color = "#E6B325", aes(size = Students), alpha = 0.5, shape = 21) + 
+  coord_sf(expand = FALSE) +
+  annotate(
+    "curve",
+    x = 103.5,
+    xend = 103.6,
+    y = 12.62,
+    yend = 12.53,
+    color = "#240750",
+    curvature = -0.2,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
+  theme_void() +
+  labs(
+    size = "Average Eating Students"
+  ) +
+  theme(
+    plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
+    plot.title = element_text(size = 12, hjust = 0.5, family = "garamond", face = "bold", margin = margin(b = 2, t = 10)),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, family = "garamond", face = "bold", margin = margin(b = -0.5)),
+    legend.text = element_text(size = 13, face = "bold", family = "garamond", margin = margin(t = 2)),
+    legend.box.margin = margin(0, 0, 0, 0),
+    plot.caption = element_text(size = 11, family = "garamond", hjust = 0, face = "bold"),
+    plot.caption.position = "plot"
+  ) + 
+  scale_size_continuous(range = c(0.3, 2.5)) +
+  guides(size = guide_legend(title.position = "top", title.hjust = 0.5))
+
+
+ # Merge the two maps
+
+complete_map <- school_density_graph_01 + school_connect_graph_01 + plot_layout(widths = c(1, 1)) +
+  plot_annotation(title = "Schools in Ta Lou Senchey district have the highest density of schools and well connected by roads.",
+                  subtitle = "The map on the left shows the density of schools in the region, with the map on the right showing the road network and the\naverage number of students in each school. These might be the factors why Ta Lou Senchey perfomed well.", 
+                  caption = "Source: Data from SFIS", 
+                  theme = theme(plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
+                                plot.title = element_text(family = "garamond", size = 23, face = "bold", colour = "#088395", lineheight = 0.5), 
+                                plot.subtitle = element_text(family = "garamond", size = 19, colour = "#088395", lineheight = 0.5, face = "bold.italic",
+                                                             margin = margin(b = 0)), 
+                                plot.caption = element_text(family = "garamond", size = 15, colour = "#088395", hjust = 0)))
+
+
+ggsave("figures/complete_map.png", complete_map, width = 7.15, height = 5.02, dpi = 300, units = "in", device = "png")
 
 
 
