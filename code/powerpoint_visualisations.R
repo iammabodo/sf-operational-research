@@ -130,14 +130,52 @@ ggsave("figures/complete_plot.png", complete_plot, width = 9.72, height = 6.52, 
   
 
 
+######################################################################################################
+
+#2. School Suppliers Costs
+
+supplier_costs <- average_wetcosts %>% 
+  left_join(average_drycosts, by = "procurement") %>%
+  mutate(schools = c(20, 23, 31),
+         wet_cost_per_school = (wetcosts*wetsuppliers)/schools,
+         dry_cost_per_school = (drycosts*drysuppliers)/schools) %>% 
+  pivot_longer(cols = wet_cost_per_school:dry_cost_per_school, names_to = "cost_type", values_to = "cost_per_school")
 
 
+supplier_costs %>% 
+  ggplot(aes(x = cost_per_school, y = procurement)) +
+  geom_bar(stat = "identity", aes(fill = cost_type), position = "dodge", width = 0.6) + # Reduce width slightly
+  scale_y_discrete(expand = expansion(c(0, 0))) +  # Remove space between bars and axis
+  # geom_text(aes(label = paste0("$", round(cost_per_school, 2))), 
+  #           size = 6, family = "garamond", color = "#088395",
+  #           nudge_x = 1.5, nudge_y = 0.1, vjust = 0.5) +
+  labs(
+    title = "",
+    subtitle = "",
+    x = "",
+    y = "",
+    caption = "",
+    color = ""
+  ) +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
+    plot.title = element_text(family = "garamond", size = 14, face = "bold", colour = "#088395"),
+    plot.subtitle = element_text(family = "garamond", size = 10, colour = "#088395"),
+    plot.caption = element_text(family = "garamond", size = 8, colour = "#088395"),
+    axis.title = element_blank(),
+    axis.text.y = element_text(family = "garamond", size = 18, colour = "#088395", face = "bold",
+                               margin = margin(r = -10)),  # Move y-axis labels closer
+    axis.text.x = element_text(family = "garamond", size = 18, colour = "#088395", face = "bold"),  # Move x-axis labels closer
+    axis.line = element_line(color = "#088395", size = 0.5),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor.x = element_blank(),
+    panel.grid.major.y = element_line(color = "#E0E6C9", size = 0.6, linetype = "dashed"),
+    legend.position = "none"
+  )
 
 
-
-
-
-
+  
 
 
 
