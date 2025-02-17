@@ -381,13 +381,107 @@ ggsave("figures/complete_map.png", complete_map, width = 7.15, height = 5.02, dp
 
 
 
+######################################################################################
+
+# Stages of the procurement process improved graph
 
 
+ImprovementGraphPP_01 <- ImprovementTable %>% 
+  filter(Pilot == "Non-Procurement Pilot") %>%
+  ggplot(aes(x = TenderProcessImp, y = Percentage)) +
+  geom_bar(stat = "identity", fill =  "#441752", width = 0.5) +
+  geom_text(aes(label = paste0(round(Percentage, 0), "% (", Number, ")")), 
+            hjust = 0.5, color = "#441752", size = 6, nudge_y = 2,
+            family = "garamond", fontface = "bold") + 
+  coord_cartesian(ylim = c(0, 80)) +
+  annotate(
+    "segment", x = 1.28, xend = 2, y = 68, yend = 46,
+    color = "#441752", size = 0.5, arrow = arrow(type = "closed", length = unit(0.1, "inches"))
+  )+
+  annotate(
+    "text", x = 2.5, y = 40, label = "Contract management and implementation\nstage are still the most challenging\nin non-pilot districts compared to other\nstages...", 
+    family = "garamond", size = 5.8, color = "#441752", lineheight = 0.7) +
+  annotate(
+    "text", x = 2.5, y = 75, label = "Non-Procurement\nPilot Districts",
+    family = "garamond", size = 7, color = "#441752", lineheight = 0.7, fontface = "bold") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15)) +  # Wrap x-axis labels
+  scale_y_continuous(expand = c(0, 2)) + 
+  theme_clean() +  # Set the theme
+  labs(
+    caption = ""
+  ) + 
+  theme(
+    plot.background = element_rect(fill = "#FEF5DA", color = "#FEF5DA"),
+    axis.text.x = element_text(angle = 0, hjust = 0.5, lineheight = 0.5, face = "bold", family = "garamond", color = "#441752", size = 13),
+    axis.line.x = element_line(color = "#441752", size = 0.5),
+    axis.text.y = element_text(angle = 0, hjust = 0.5, lineheight = 0.5, face = "bold", family = "garamond", color = "#441752", size = 13),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    strip.text = element_text(size = 8, family = "garamond", hjust = 0.3, face = "bold", color = "#441752", margin = margin(b = 10)), 
+    strip.background = element_rect(fill = "#FEF5DA", color = "#FEF5DA"),
+    plot.caption = element_text(hjust = 0, size = 5, family = "garamond", color = "#441752", face = "bold"),
+    plot.caption.position = "plot"
+    
+  )
+
+# Second graph
+ImprovementGraphPP_02 <- ImprovementTable %>% 
+  filter(Pilot != "Non-Procurement Pilot") %>%
+  ggplot(aes(x = TenderProcessImp, y = Percentage)) +
+  geom_bar(stat = "identity", fill =  "#F29F58", width = 0.5) +
+  geom_text(aes(label = paste0(round(Percentage, 0), "% (", Number, ")")), 
+            hjust = 0.5, color = "#441752", size = 6, nudge_y = 2,
+            family = "garamond", fontface = "bold") + 
+  coord_cartesian(ylim = c(0, 80)) +
+  annotate(
+    "segment", x = 1, xend = 1.2, y = 18, yend = 48,
+    color = "#441752", size = 0.5, arrow = arrow(type = "closed", length = unit(0.1, "inches"))
+  )+
+  annotate(
+    "text", x = 2, y = 53, label = "...while in procurement pilot districts, the\ncontract management and implementation stage\nseems to be the most improved.", 
+    family = "garamond", size = 7, color = "#441752", lineheight = 0.5) +
+  annotate(
+    "text", x = 2.5, y = 75, label = "Procurement Pilot\nDistricts",
+    family = "garamond", size = 7, color = "#441752", lineheight = 0.7, fontface = "bold") +
+  scale_x_discrete(labels = function(x) stringr::str_wrap(x, width = 15)) +  # Wrap x-axis labels
+  scale_y_continuous(expand = c(0, 2)) + 
+  theme_clean() +  # Set the theme
+  labs(
+    caption = ""
+  ) + 
+  theme(
+    plot.background = element_rect(fill = "#FEF5DA", color = "#FEF5DA"),
+    axis.text.x = element_text(angle = 0, hjust = 0.5, lineheight = 0.5, family = "garamond", color = "#441752", size = 13, face = "bold"),
+    axis.line.x = element_line(color = "#441752", size = 0.5),
+    axis.line.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.y = element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.grid.major.y = element_blank(),
+    strip.text = element_text(size = 8, family = "garamond", hjust = 0.3, face = "bold", color = "#441752", margin = margin(b = 10)), 
+    strip.background = element_rect(fill = "#FEF5DA", color = "#FEF5DA"),
+    plot.caption = element_text(hjust = 0, size = 5, family = "garamond", color = "#441752", face = "bold"),
+    plot.caption.position = "plot"
+    
+  )
 
 
+# Merge the two graphs
+
+complete_survey_graph <- ImprovementGraphPP_01 + ImprovementGraphPP_02 + plot_layout(widths = c(1, 1)) +
+  plot_annotation(title = "Procurement Pilot Districts have shown significant improvements in the\ncontract management and implementation stage compared to non-pilot districts.",
+                  subtitle = "", 
+                  caption = "Source: Data from Survey", 
+                  theme = theme(plot.background = element_rect(fill = "#FEF5DA", color = "#FEF5DA"),
+                                plot.title = element_text(family = "garamond", size = 23, face = "bold", colour = "#441752", lineheight = 0.5), 
+                                plot.subtitle = element_text(family = "garamond", size = 19, colour = "#441752", lineheight = 0.5, face = "bold.italic",
+                                                             margin = margin(b = 5)), 
+                                plot.caption = element_text(family = "garamond", size = 15, colour = "#441752", hjust = 0)))
 
 
-
+ggsave("figures/complete_survey_graph.png", complete_survey_graph, width = 7.46, height = 6.52, dpi = 300, units = "in", device = "png")
 
 
 
