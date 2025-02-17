@@ -142,15 +142,17 @@ supplier_costs <- average_wetcosts %>%
   pivot_longer(cols = wet_cost_per_school:dry_cost_per_school, names_to = "cost_type", values_to = "cost_per_school")
 
 
-supplier_costs %>% 
+supplier_costs_graph <- supplier_costs %>% 
   ggplot(aes(x = cost_per_school, y = procurement)) +
   geom_bar(stat = "identity", aes(fill = cost_type), position = "dodge", width = 0.6) + # Reduce width slightly
-  scale_y_discrete(expand = expansion(c(0, 0))) +  # Remove space between bars and axis
+  scale_y_discrete(expand = expansion(c(0.2, 0))) +  # Remove space between bars and axis
+  scale_x_continuous(position = "top", labels = scales::dollar_format(prefix = "$")) +  # Move x-axis labels closer
+  geom_vline(xintercept = 0, color = "#088395", size = 0.5) +  # Add a vertical line at 0
   # geom_text(aes(label = paste0("$", round(cost_per_school, 2))), 
   #           size = 6, family = "garamond", color = "#088395",
   #           nudge_x = 1.5, nudge_y = 0.1, vjust = 0.5) +
   labs(
-    title = "",
+    title = "Community Centralisation also performed well\nin reducing costs for the suppliers (which can be\ninterpreted as gains from bulk buying/sourcing)",
     subtitle = "",
     x = "",
     y = "",
@@ -160,19 +162,22 @@ supplier_costs %>%
   theme_minimal() +
   theme(
     plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
-    plot.title = element_text(family = "garamond", size = 14, face = "bold", colour = "#088395"),
+    plot.title = element_text(family = "garamond", size = 20, face = "bold", colour = "#088395", lineheight = 0.8),
+    plot.title.position = "plot",
     plot.subtitle = element_text(family = "garamond", size = 10, colour = "#088395"),
     plot.caption = element_text(family = "garamond", size = 8, colour = "#088395"),
     axis.title = element_blank(),
     axis.text.y = element_text(family = "garamond", size = 18, colour = "#088395", face = "bold",
-                               margin = margin(r = -10)),  # Move y-axis labels closer
+                               margin = margin(r = -15)),  # Move y-axis labels closer
     axis.text.x = element_text(family = "garamond", size = 18, colour = "#088395", face = "bold"),  # Move x-axis labels closer
-    axis.line = element_line(color = "#088395", size = 0.5),
-    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
     panel.grid.minor.x = element_blank(),
-    panel.grid.major.y = element_line(color = "#E0E6C9", size = 0.6, linetype = "dashed"),
+    panel.grid.major.x = element_line(color = "#E0E6C9", size = 0.6, linetype = "dashed"),
     legend.position = "none"
   )
+
+ggsave("figures/supplier_costs_graph.png", supplier_costs_graph, width = 6.26, height = 5.02, dpi = 200)
+
 
 
   
