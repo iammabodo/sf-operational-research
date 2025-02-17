@@ -103,44 +103,6 @@ MealsDaysGraph <- MealsDays %>%
 
 
 
-ImprovementGraph <- ImprovementProcurement %>% 
-  arrange(desc(Percentage)) %>%  # Arrange in descending order
-  mutate(TenderProcessImp = factor(TenderProcessImp, levels = unique(TenderProcessImp))) %>%  # Wrap and reorder levels
-  ggplot(aes(x = TenderProcessImp, y = Percentage)) +
-  geom_bar(stat = "identity", fill = "steelblue") +  # Set fill color for the bars
-  coord_flip() +  # Flip the coordinates
-  geom_text(aes(y = 2, label = str_wrap(TenderProcessImp, 10), lineheight = 1.2), 
-            hjust = 0, color = "white", size = 2,
-            family = "opensans") +  # Position labels at the start of the bar
-  geom_text(aes(label = paste0(round(Percentage, 1), "%")), 
-            hjust = 0, color = "white", size = 2, nudge_y = -4,
-            family = "opensans", fontface = "bold") +  # Align percentages at the end of the bar
-  theme_minimal() +  # Set the theme
-  labs(title = "Stages of procurement process to be improved (Pilot)",
-       x = "Percentage",
-       y = "Improvement") +  # Set the labels
-  theme(
-    # Removing the axis titles and labels
-    axis.title.y = element_blank(),  # Remove the y-axis title
-    axis.text.y = element_blank(),  # Remove the y-axis labels
-    axis.ticks.y = element_blank(),  # Remove the y-axis ticks
-    axis.title.x = element_blank(),  # Remove the x-axis title
-    axis.text.x = element_blank(),  # Set the size of the x-axis labels
-    panel.grid.major.y = element_blank(),  # Remove the y-axis gridlines
-    panel.grid.minor.y = element_blank(),  # Remove the y-axis gridlines
-    panel.grid.major.x = element_blank(),  # Remove the x-axis gridlines
-    panel.grid.minor.x = element_blank(),  # Remove the x-axis gridlines
-    # Style the plot title
-    plot.title = element_text(size = 8, family = "opensans", hjust = 0.2, face = "bold"))
-
-
-
-# Save the graph
-ggsave("report/ImprovementGraph2.png", 
-       plot = ImprovementGraph, 
-       width = 3.53, height = 3, dpi = 200,
-       bg = "white")
-
 newImprovementGraph <- ImprovementTable %>% 
   ggplot(aes(x = TenderProcessImp, y = Percentage)) +
   geom_bar(stat = "identity", fill = if_else(ImprovementTable$Pilot == "Non-Procurement Pilot", "steelblue", "grey"), width = 0.5) +

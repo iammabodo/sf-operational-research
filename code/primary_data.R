@@ -5,6 +5,7 @@ library(readxl)
 library(shadowtext)
 library(ggthemes)
 library(showtext)
+library(readxl)
 
 
 # Set the fonts for the plots
