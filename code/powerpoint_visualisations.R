@@ -99,7 +99,7 @@ changes_graph <- condinious_supply %>%
            family = "garamond", color = "#ECEFDC") +
   scale_size_continuous(range = c(20, 30)) +
   scale_x_continuous(breaks = NULL) +  # Remove x-axis labels
-  annotate("text", x = 1, y = 3.4, label = "Change", lineheight = 1,
+  annotate("text", x = 1, y = 3.5, label = "Change", lineheight = 1,
            family = "garamond", size = 9, fontface = "bold", color = "#FFB200") +
   theme_minimal() +
   labs() + 
@@ -119,12 +119,12 @@ complete_plot <- continous_supply_graph + changes_graph + plot_layout(design=
                                )) +
   plot_annotation(title = "Using breakdown days as the measure of continous supply of commodities to\nschools, commune level centralisation was the most efficient model from 2023-24.",
                   subtitle = "Breakdown days are the number of days a school goes without a commodity due to stockouts or other\nreasons. In this study, this was assumed to be as a reason of shortages of commodities", 
-                  caption = "Source: Ministry of Education", 
+                  caption = "Source: Data from SFIS", 
                   theme = theme(plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
                                 plot.title = element_text(family = "garamond", size = 30, face = "bold", colour = "#088395", lineheight = 0.5), 
                                 plot.subtitle = element_text(family = "garamond", size = 23, colour = "#088395", lineheight = 0.5, face = "bold.italic",
                                                              margin = margin(b = 0)), 
-                                plot.caption = element_text(family = "garamond", size = 6, colour = "#088395"))) 
+                                plot.caption = element_text(family = "garamond", size = 15, colour = "#088395", hjust = 0))) 
 
 ggsave("figures/complete_plot.png", complete_plot, width = 9.72, height = 6.52, dpi = 300, units = "in", device = "png")  
   
