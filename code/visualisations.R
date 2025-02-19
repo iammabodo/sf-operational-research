@@ -8,6 +8,7 @@ library(marquee)
 library(biscale)
 library(cowplot)
 library(sf)
+library(ggspatial)
 
 ########################################################################
 #Text for the graphs - setting the defalts
@@ -1039,7 +1040,7 @@ school_map <- ggplot() +
   bi_scale_fill(pal = pallete2, dim = 4, guide = FALSE, na.value = "#CC796E") +
   geom_sf(data = provincial_boundaries, fill = NA, color = "#B55245", linewidth = 0.3) + 
   # Add provincial names
-  geom_sf_text(data = province_filtered, aes(label = Province), size = 3, color = "white", family = "opensans", fontface = "bold",
+  geom_sf_text(data = province_filtered, aes(label = Province), size = 5, color = "white", family = "garamond", fontface = "bold",
                nudge_y = if_else(province_filtered$Province == "Pursat", -0.1, 0)) +
   # # District names for the pilot districts
   # geom_sf_text(data = district_filtered, aes(label = if_else(District == "Phnum Kravanh" | District == "Ta Lou Senchey", District, NA)), 
@@ -1057,18 +1058,19 @@ school_map <- ggplot() +
   #   linewidth = 0.2,
   #   arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
   # Minimal theme or a dark theme for a better contrast
-  theme_void() + 
-  coord_sf() + 
+  theme_void()  + 
   labs(
-    title = "School Feeding Programme in Cambodia",
-    subtitle = "The number of schools and students per district in provinces where the school feeding programme is implemented",
+    title = "School Feeding Programme in Cambodia - Number of Students vs Number of Schools",
+    subtitle = "",
     caption = "Note: Data used is from SFIS. Districts in brown do not have the school feeding programme. The bivariate classification is based on quantiles."
   ) + 
   theme(
-    plot.title = element_text(size = 12, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 5, t = 10)),
-    plot.subtitle = element_text(size = 11, hjust = 0.5, family = "opensans", margin = margin(b = -5)),
-    plot.caption = element_text(size = 10, family = "opensans", hjust = 0.5, face = "italic", margin = margin(b = 5, t = -20))
-  )
+    plot.margin = margin(0, 0, 0, 0),
+    plot.title = element_text(size = 16, hjust = 0.5, family = "garamond", face = "bold", margin = margin(b = 5, t = -10)),
+    plot.subtitle = element_text(size = 11, hjust = 0.5, family = "garamond", margin = margin(b = -5)),
+    plot.caption = element_text(size = 12, family = "garamond", hjust = 0.5, face = "bold", margin = margin(b = -10, t = 5))
+  ) + 
+  coord_sf(expand = F)
 
 
 map_legend <- bi_legend(
@@ -1094,6 +1096,14 @@ school_map_complete <- ggdraw() +
 ggsave("report/school_map.png", 
        plot = school_map_complete, 
        width = 8.27, height = 4.63, dpi = 300, bg = "white")
+
+school_map_complete2 <- ggdraw() +
+  draw_plot(school_map, x = 0, y = 0, width = 1, height = 1) +
+  draw_plot(map_legend, x = 0.8, y = 0.20, width = 0.2, height = 0.2)
+
+ggsave("figures/school_map.png", 
+       plot = school_map_complete2, 
+       width = 6.19, height = 5.61, dpi = 300, bg = "white")
 
   
 # School connectedness and desity by province
