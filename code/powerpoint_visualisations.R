@@ -139,7 +139,11 @@ supplier_costs <- average_wetcosts %>%
   mutate(schools = c(20, 23, 31),
          wet_cost_per_school = (wetcosts*wetsuppliers)/schools,
          dry_cost_per_school = (drycosts*drysuppliers)/schools) %>% 
-  pivot_longer(cols = wet_cost_per_school:dry_cost_per_school, names_to = "cost_type", values_to = "cost_per_school")
+  pivot_longer(cols = wet_cost_per_school:dry_cost_per_school, names_to = "cost_type", values_to = "cost_per_school") %>% 
+  mutate(cost_type = case_when(
+    cost_type == "wet_cost_per_school" ~ "Wet Commodities",
+    cost_type == "dry_cost_per_school" ~ "Dry Commodities"))
+ 
 
 
 supplier_costs_graph <- supplier_costs %>% 
@@ -147,32 +151,31 @@ supplier_costs_graph <- supplier_costs %>%
   geom_bar(stat = "identity", aes(fill = cost_type), position = "dodge", width = 0.6) + # Reduce width slightly
   scale_y_discrete(expand = expansion(c(0.2, 0))) +  # Remove space between bars and axis
   scale_x_continuous(position = "top", labels = scales::dollar_format(prefix = "$")) +  # Move x-axis labels closer
-  geom_vline(xintercept = 0, color = "#088395", size = 0.5) +  # Add a vertical line at 0
-  # geom_text(aes(label = paste0("$", round(cost_per_school, 2))), 
-  #           size = 6, family = "garamond", color = "#088395",
-  #           nudge_x = 1.5, nudge_y = 0.1, vjust = 0.5) +
+  geom_vline(xintercept = 0, color = "#088395", size = 0.5) +  
   labs(
-    title = "Community Centralisation also performed well\nin reducing costs for the suppliers",
+    title = "Suppliers in Community Centralisation incured lower\ncosts per school compared to other procurement models.",
     x = "",
     y = "",
-    caption = "",
+    caption = "Source: Survey Data",
     color = ""
   ) +
   theme_minimal() +
   theme(
     plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
-    plot.title = element_text(family = "garamond", size = 20, face = "bold", colour = "#088395", lineheight = 0.8),
+    plot.title = element_text(family = "garamond", size = 18, face = "bold", colour = "#088395", lineheight = 0.8),
     plot.title.position = "plot",
-    plot.subtitle = element_text(family = "garamond", size = 10, colour = "#088395"),
     plot.caption = element_text(family = "garamond", size = 8, colour = "#088395"),
+    plot.caption.position = "plot",
     axis.title = element_blank(),
-    axis.text.y = element_text(family = "garamond", size = 18, colour = "#088395", face = "bold",
+    axis.text.y = element_text(family = "garamond", size = 16, colour = "#088395", face = "bold",
                                margin = margin(r = -15)),  # Move y-axis labels closer
-    axis.text.x = element_text(family = "garamond", size = 18, colour = "#088395", face = "bold"),  # Move x-axis labels closer
+    axis.text.x = element_text(family = "garamond", size = 16, colour = "#088395", face = "bold"),  # Move x-axis labels closer
     panel.grid.major.y = element_blank(),
     panel.grid.minor.x = element_blank(),
     panel.grid.major.x = element_line(color = "#E0E6C9", size = 0.6, linetype = "dashed"),
-    legend.position = "bottom"
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(family = "garamond", size = 12, colour = "#088395", face = "bold")
   )
 
 ggsave("figures/supplier_costs_graph.png", supplier_costs_graph, width = 6.26, height = 5.02, dpi = 200)
