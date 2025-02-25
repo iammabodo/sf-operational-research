@@ -152,8 +152,7 @@ supplier_costs_graph <- supplier_costs %>%
   #           size = 6, family = "garamond", color = "#088395",
   #           nudge_x = 1.5, nudge_y = 0.1, vjust = 0.5) +
   labs(
-    title = "Community Centralisation also performed well\nin reducing costs for the suppliers (which can be\ninterpreted as gains from bulk buying/sourcing)",
-    subtitle = "",
+    title = "Community Centralisation also performed well\nin reducing costs for the suppliers",
     x = "",
     y = "",
     caption = "",
@@ -173,7 +172,7 @@ supplier_costs_graph <- supplier_costs %>%
     panel.grid.major.y = element_blank(),
     panel.grid.minor.x = element_blank(),
     panel.grid.major.x = element_line(color = "#E0E6C9", size = 0.6, linetype = "dashed"),
-    legend.position = "none"
+    legend.position = "bottom"
   )
 
 ggsave("figures/supplier_costs_graph.png", supplier_costs_graph, width = 6.26, height = 5.02, dpi = 200)
@@ -366,8 +365,7 @@ school_connect_graph_01 <- ggplot() +
  # Merge the two maps
 
 complete_map <- school_density_graph_01 + school_connect_graph_01 + plot_layout(widths = c(1, 1)) +
-  plot_annotation(title = "Schools in Ta Lou Senchey district have the highest density of schools and well connected by roads.",
-                  subtitle = "The map on the left shows the density of schools in the region, with the map on the right showing the road network and the\naverage number of students in each school. These might be the factors why Ta Lou Senchey perfomed well.", 
+  plot_annotation(title = "Ta Lou Senchey district have the highest density of schools and well connected\nby major roads.",
                   caption = "Source: Data from SFIS", 
                   theme = theme(plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
                                 plot.title = element_text(family = "garamond", size = 23, face = "bold", colour = "#088395", lineheight = 0.5), 
