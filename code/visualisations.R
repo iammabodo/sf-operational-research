@@ -770,7 +770,11 @@ schools_sf <- st_as_sf(
   crs = 4326  # WGS 84 CRS (latitude/longitude)
 )
 
-
+schools_sf %>% 
+  filter(District == "Phnum Kravanh") %>% 
+  ggplot() +
+  geom_sf() +
+  geom_sf_text(aes(label = SchoolName), size = 2, family = "opensans") 
 # read the district level shapefile
 
 districts_sf <- st_read("data/shapefiles/WFP_PST_5Districts.shp") %>%
@@ -779,6 +783,24 @@ districts_sf <- st_read("data/shapefiles/WFP_PST_5Districts.shp") %>%
   select(District, Shape_Area, Adm1_code, geometry) %>% 
   mutate(Shape_Area = Shape_Area / 1000000) %>%   # Convert the area to km²
   rename(CODE = Adm1_code)
+
+original_bbox <- st_bbox(districts_sf)
+
+bbox_filtered <- st_bbox(c(xmin = original_bbox["xmin"], 
+                           ymin = 12.1,  # Crop below this latitude
+                           xmax = original_bbox["xmax"], 
+                           ymax = original_bbox["ymax"]))
+
+boundary <- st_sfc(st_linestring(matrix(c(
+  min(st_bbox(districts_sf)["xmin"]), 12.2,
+  max(st_bbox(districts_sf)["xmax"]), 12.2
+), ncol = 2, byrow = TRUE)), crs = st_crs(districts_sf))
+
+bbox_above_12_2 <- st_as_sfc(st_bbox(c(xmin = st_bbox(districts_sf)["xmin"],
+                                       xmax = st_bbox(districts_sf)["xmax"],
+                                       ymin = 12.2,  # Crop below this latitude
+                                       ymax = st_bbox(districts_sf)["ymax"]),
+                                     crs = st_crs(districts_sf)))
 
 communes_sf <- st_read("data/shapefiles/WFP_PST_37Communes.shp") %>%
   rename(Commune =  Adm3_Name) %>%

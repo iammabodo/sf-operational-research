@@ -280,9 +280,14 @@ Jan_Aug_2024 <- rbind(January_2024, February_2024,
   # mutate the pilot schools varaible
   mutate(PilotSchools = case_when(
     District == "Phnum Kravanh" | District == "Ta Lou SenChey" ~ "Pilot School",
-    TRUE ~ "Non-Pilot School"))
+    TRUE ~ "Non-Pilot School"),
+    pilotmodel = case_when(
+      District == "Phnum Kravanh" ~ "District Centralisation",
+      District == "Ta Lou SenChey" ~ "Commune Centralisation",
+      TRUE ~ "Non-Procurement Pilots")) %>% 
+  mutate(RiceCostUSD = SeparateExpenditureRice/4000,
+         RiceCostPerKg = RiceCostUSD/ReceivedRice)
   
-
 # Combine the two years
 
 FullTablesData <- rbind(Jan_Dec_2023_Data,
@@ -561,5 +566,17 @@ MonthYearCosts %>%
 
 
 
+#########################################################################################
 
+# Breakdown days
+
+FullTablesData %>% 
+  filter(District == "Phnum Kravanh") %>%
+  mutate(furherschools = case_when(
+    SchoolName == "Toteung Thngai" | SchoolName == "Kset Borei" | SchoolName == "Or Soam" | 
+      SchoolName == "Santrai Samaki" | SchoolName == "Mol Samaki" | SchoolName == "Raing Khvav" ~ "Furher Schools",
+    TRUE ~ "Closer Schools")) %>% 
+  filter(SchoolName %in% c("Toteung Thngai", "Kset Borei", "Or Soam", "Santrai Samaki", "Mol Samaki", "Raing Khvav")) %>% 
+  group_by(SchoolName, Year) %>%
+  summarise(MeanBreakDownDays = mean(BreakDownDays))
 
