@@ -819,9 +819,17 @@ districts_sf <- districts_sf %>%
     District == "Phnum Kravanh" ~ 0.7,
     District == "Ta Lou Senchey" ~ 4.1,
     TRUE ~ NA
+  ),
+  hp_sqkm = case_when(
+    District == "Krakor" ~ 40.83,
+    District == "Bakan" ~ 69.79,
+    District == "Kandieng" ~ 30.47,
+    District == "Phnum Kravanh" ~ 22.25,
+    District == "Ta Lou Senchey" ~ 19.09,
+    TRUE ~ NA 
   )) %>% 
   mutate(percent_hp = percent_hp / 100) %>% 
-  select(District, adjusted_density, percent_hp, school_density, geometry)
+  select(District, adjusted_density, hp_sqkm, percent_hp, school_density, geometry)
 
 
 roads <- st_read("data/roads/khm_trs_roads_gov_wfp_ed2024.shp") %>%
@@ -1308,7 +1316,8 @@ adjusted_density_data %>%
   summarise(
     mean_density = mean(adjusted_density, na.rm = T),
     percent_hp = mean(percent_hp, na.rm = T),
-    mean_adjusted_density1 = mean(adjusted_density1, na.rm = T)
+    mean_adjusted_density1 = mean(adjusted_density1, na.rm = T),
+    mean_hpsqm = mean(hp_sqkm, na.rm = T)
   ) %>%
   left_join(
     supplier_costs,
