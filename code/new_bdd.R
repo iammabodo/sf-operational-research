@@ -35,7 +35,7 @@ Complete_data <- SFIS_Sch_Locations %>%
 
 
 
-Complete_data %>% 
+annual_breakdowndays <- Complete_data %>% 
   filter(Activity  == "hgsf_full") %>% 
   filter(study_days > 0) %>%
   group_by(pilot, Year) %>%
