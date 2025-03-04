@@ -784,23 +784,6 @@ districts_sf <- st_read("data/shapefiles/WFP_PST_5Districts.shp") %>%
   mutate(Shape_Area = Shape_Area / 1000000) %>%   # Convert the area to km²
   rename(CODE = Adm1_code)
 
-original_bbox <- st_bbox(districts_sf)
-
-bbox_filtered <- st_bbox(c(xmin = original_bbox["xmin"], 
-                           ymin = 12.1,  # Crop below this latitude
-                           xmax = original_bbox["xmax"], 
-                           ymax = original_bbox["ymax"]))
-
-boundary <- st_sfc(st_linestring(matrix(c(
-  min(st_bbox(districts_sf)["xmin"]), 12.2,
-  max(st_bbox(districts_sf)["xmax"]), 12.2
-), ncol = 2, byrow = TRUE)), crs = st_crs(districts_sf))
-
-bbox_above_12_2 <- st_as_sfc(st_bbox(c(xmin = st_bbox(districts_sf)["xmin"],
-                                       xmax = st_bbox(districts_sf)["xmax"],
-                                       ymin = 12.2,  # Crop below this latitude
-                                       ymax = st_bbox(districts_sf)["ymax"]),
-                                     crs = st_crs(districts_sf)))
 
 communes_sf <- st_read("data/shapefiles/WFP_PST_37Communes.shp") %>%
   rename(Commune =  Adm3_Name) %>%
@@ -821,7 +804,24 @@ school_counts <- schools_sf %>%
 districts_sf <- districts_sf %>% 
   left_join(school_counts, by = "District") %>% 
   mutate(school_density = n_schools / Shape_Area) %>% 
-  select(District, school_density, geometry)
+  mutate(adjusted_density = case_when(
+    District == "Krakor" ~ school_density / 3.1,
+    District == "Bakan" ~ school_density / 5.6,
+    District == "Kandieng" ~ school_density / 5.2,
+    District == "Phnum Kravanh" ~ school_density / 0.7,
+    District == "Ta Lou Senchey" ~ school_density / 4.1,
+    TRUE ~ school_density
+  ),
+  percent_hp = case_when(
+    District == "Krakor" ~ 3.1,
+    District == "Bakan" ~ 5.6,
+    District == "Kandieng" ~ 5.2,
+    District == "Phnum Kravanh" ~ 0.7,
+    District == "Ta Lou Senchey" ~ 4.1,
+    TRUE ~ NA
+  )) %>% 
+  mutate(percent_hp = percent_hp / 100) %>% 
+  select(District, adjusted_density, percent_hp, school_density, geometry)
 
 
 roads <- st_read("data/roads/khm_trs_roads_gov_wfp_ed2024.shp") %>%
@@ -1228,6 +1228,100 @@ district_cent <- district_filtered %>%
 ggsave("report/district_cent.png",
        plot = district_cent,
        width = 3.12, height = 1.93, dpi = 300, bg = "white")
+
+
+## Density adjusted for habitable areas
+
+school_density_graph_01 <- districts_sf %>% ggplot(aes(fill = adjusted_density)) +
+  # District layer with school density
+  geom_sf(data = districts_sf, color = "white", size = 1.9) +
+  # School points layer
+  geom_sf(data = schools_sf, size = 1, fill = "#240A34", alpha = 0.5, shape = 21) +
+  #Add commune layer
+  #geom_sf(data = communes_sf, fill = "transparent", color = "#FBF4DB", size = 0) +
+  # District names layer
+  geom_sf_text(data = districts_sf, aes(label = District), size = 3.5, fontface = "bold",
+               color = if_else(districts_sf$District == "Ta Lou Senchey", "white", "black"), family = "opensans") +
+  coord_sf(expand = FALSE) +
+  # Water layer
+  # geom_sf(data = water, fill = "#A6D6D6", color = "#A6D6D6") +
+  # Custom color scale for school density
+  scale_fill_gradient(
+    name = "Schools/km²",
+    low = "#E0A75E", # Light yellow
+    high = "#973131", # Deep red
+    guide = guide_colorbar(
+      title.position = "top",
+      title.hjust = 0.5,
+      barwidth = 5, # Adjust bar width
+      barheight = 0.2 # Adjust bar height
+    )
+  ) +
+  # Add labels and customize the plot
+  labs(
+    title = "Panel (A): School Density"
+  ) +
+  theme_void() +
+  annotation_scale(location = "bl", text_family = "serif", height = unit(0.10, "cm")) +
+  annotation_north_arrow(which_north = "grid",
+                         location    = "tl",
+                         style       = north_arrow_orienteering(text_family = "serif"),
+                         height      = unit(0.45, "cm"),
+                         width       = unit(0.45, "cm")) +
+  theme(
+    plot.title = element_text(size = 12, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 10)),
+    plot.subtitle = element_text(size = 12, hjust = 0.5),
+    legend.position = "bottom",
+    legend.title = element_text(size = 11, family = "opensans", face = "bold", margin = margin(b = 2)),
+    legend.text = element_text(size = 10, face = "bold", family = "opensans", margin = margin(t = 2)),
+    legend.box.margin = margin(t = 0),
+    plot.caption = element_text(size = 9, family = "opensans", hjust = 0),
+    plot.caption.position = "plot"
+  )
+
+ggsave("figures/school_density_graph_01.png", 
+       plot = school_density_graph_01, 
+       width =
+         4.63, height = 4.63, dpi = 300, bg = "white")
+
+
+
+#######################################################################################################
+
+# Calculating adjusted costs
+
+
+adjusted_density_data <- districts_sf %>% 
+  st_drop_geometry() %>% 
+  as.data.frame() %>% 
+  filter(District != "Krakor") %>%
+  mutate(procurement = case_when(
+    District == "Phnum Kravanh"~ "District Centralisation",
+    District == "Ta Lou Senchey" ~ "Commune Centralisation",
+    District == "Bakan" | District == "Kandieng" ~ "Non-Procurement Pilots"
+  )) %>% 
+  mutate(adjusted_density1 = adjusted_density * 100/percent_hp)
+
+
+adjusted_density_data %>% 
+  group_by(procurement) %>%
+  summarise(
+    mean_density = mean(adjusted_density, na.rm = T),
+    percent_hp = mean(percent_hp, na.rm = T),
+    mean_adjusted_density1 = mean(adjusted_density1, na.rm = T)
+  ) %>%
+  left_join(
+    supplier_costs,
+    by = "procurement") %>% 
+  mutate(
+    adjusted_schools = schools/percent_hp,
+    adjusted_costs = cost_per_school * adjusted_schools,
+    adjusted_costs1 = cost_per_school *  percent_hp
+  ) %>%
+  select(procurement, mean_density, percent_hp, adjusted_costs1,mean_adjusted_density1, adjusted_schools, cost_per_school, adjusted_costs)
+
+
+
 
 
 
