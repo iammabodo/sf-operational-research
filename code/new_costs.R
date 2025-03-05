@@ -54,28 +54,67 @@ districts_cleaned <- districts_sf %>%
   bind_rows(phnum_clipped)
 
 
-
-ggplot() +
-  geom_sf(data = districts_cleaned, fill = "lightblue") +
-  geom_sf(data = schools_sf, color = "red", size = 1) +
-  theme_minimal()
-
-clean_district_area <- districts_cleaned %>% 
-  group_by(District) %>%
-  mutate(area = as.numeric(st_area(geometry) / 1000000)) %>% 
-  left_join(Schools_n, by = "District") %>% 
-  st_drop_geometry() %>% 
-  select(District, n_nschools, area) %>% 
-  mutate(pilot = case_when(
-    District == "Ta Lou Senchey" ~ "Commune Centralisation",
-    District == "Phnum Kravanh" ~ "District Centralisation",
-    TRUE~ "Non-Pilot Districts"
-  )) %>% 
-  filter(District != "Krakor")
   
 
+new_costs <- supplier_costs %>% 
+  distinct(procurement, .keep_all = T) %>%
+  select(procurement, wetcosts, wetsuppliers, drycosts, drysuppliers) %>% 
+  mutate(total_wet_costs = wetcosts * wetsuppliers,
+         total_dry_costs = drycosts * drysuppliers)
 
 
 
+################################################################################
+
+# Experimenting with the all districts
+
+# Function to clip each district based on its schools
+clip_districts <- function(district) {
+  # Extract the current district
+  district_poly <- districts_sf %>% filter(District == district)
+  
+  # Extract schools within the district
+  schools_in_district <- schools_sf[district_poly, ]
+  
+  # If no schools in the district, return the original polygon
+  if (nrow(schools_in_district) == 0) return(district_poly)
+  
+  # Create a convex hull around the schools
+  district_hull <- st_convex_hull(st_union(schools_in_district))
+  
+  # Intersect the hull with the original district to remove empty areas
+  clipped_district <- st_intersection(district_poly, district_hull)
+  
+  return(clipped_district)
+}
+
+# Apply to all districts
+districts_clipped <- map_dfr(unique(districts_sf$District), clip_districts) %>% 
+  mutate(Shape_Area = st_area(geometry) / 1e6)
+
+# Calculate area in km²
+districts_clipped_clean <- districts_clipped %>%
+  mutate(Area_km2 = as.numeric(st_area(geometry)) / 1e6) %>% 
+  st_drop_geometry() %>% 
+  select(District, Area_km2) %>% 
+  left_join(Schools_n, by = "District") %>% 
+  mutate(procurement = case_when(
+    District == "Ta Lou Senchey" ~ "Commune Centralisation",
+    District == "Phnum Kravanh" ~ "District Centralisation",
+    TRUE~ "Non-Procurement Pilots"
+  )) %>%
+  filter(District != "Krakor") %>% 
+  group_by(procurement) %>%
+  summarise(n_nschools = sum(n_nschools),
+            Area_km2 = sum(Area_km2))
+  
+
+clean_districts_clipped <- new_costs %>%
+  left_join(districts_clipped_clean, by = "procurement")
+
+clean_districts_clipped %>%
+  mutate(Wet_cost_per_km2 = total_wet_costs / Area_km2,
+         dry_cost_per_km2 = total_dry_costs / Area_km2) %>% 
+  select(procurement, Wet_cost_per_km2, n_nschools, Area_km2, dry_cost_per_km2)
 
 
