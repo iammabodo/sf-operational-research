@@ -115,6 +115,38 @@ clean_districts_clipped <- new_costs %>%
 adjusted_costs_data <- clean_districts_clipped %>%
   mutate(Wet_cost_per_km2 = total_wet_costs / Area_km2,
          dry_cost_per_km2 = total_dry_costs / Area_km2) %>% 
-  select(procurement, Wet_cost_per_km2, n_nschools, Area_km2, dry_cost_per_km2)
+  select(procurement, Wet_cost_per_km2, total_wet_costs, total_dry_costs, n_nschools, Area_km2, dry_cost_per_km2)
+
+write.xlsx(adjusted_costs_data, "data/adjusted_costs_data.xlsx")
+
+
+adjusted_costs_data %>% 
+  mutate(dry_cost_per_km2 = dry_cost_per_km2 * 100) %>% 
+  ggplot(aes(x = procurement, y = dry_cost_per_km2, fill = procurement)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Wet food costs per km² by procurement strategy",
+       x = "Procurement strategy",
+       y = "Wet food costs per km²") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  geom_text(aes(label = round(Wet_cost_per_km2, 2)), vjust = -0.5) +
+  scale_y_continuous(labels = scales::dollar) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  geom_hline(yintercept = mean(adjusted_costs_data$Wet_cost_per_km2), linetype = "dashed", color = "red") +
+  geom_text(aes(x = 1.5, y = mean(adjusted_costs_data$Wet_cost_per_km2), label = "Mean"), vjust = -0.5, color = "red")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
