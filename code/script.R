@@ -547,24 +547,6 @@ MonthYearCosts <- FullTablesData %>%
 
 
 
-MonthYearCosts %>%
-  filter(!is.infinite(meanOilUnitCos)) %>%
-  filter(!is.infinite(meanRiceUnitCost)) %>%
-  filter(!is.infinite(meanVegetableUnitCost)) %>%
-  filter(!is.infinite(meanProteinUnitCost)) %>%
-  filter(!is.infinite(meanUnitCostSalt)) %>%
-  group_by(procurement, Year) %>%
-  summarise(
-    meanOilUnitCos = mean(meanOilUnitCos, na.rm = TRUE), 
-    meanRiceUnitCost = mean(meanRiceUnitCost, na.rm = TRUE), 
-    meanVegetableUnitCost = mean(meanVegetableUnitCost, na.rm = TRUE), 
-    meanProteinUnitCost = mean(meanProteinUnitCost, na.rm = TRUE), 
-    meanUnitCostSalt = mean(meanUnitCostSalt, na.rm = TRUE)
-  ) %>% 
-  ungroup() %>% 
-  View()
-
-
 
 #########################################################################################
 
