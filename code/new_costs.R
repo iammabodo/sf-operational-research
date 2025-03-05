@@ -112,7 +112,7 @@ districts_clipped_clean <- districts_clipped %>%
 clean_districts_clipped <- new_costs %>%
   left_join(districts_clipped_clean, by = "procurement")
 
-clean_districts_clipped %>%
+adjusted_costs_data <- clean_districts_clipped %>%
   mutate(Wet_cost_per_km2 = total_wet_costs / Area_km2,
          dry_cost_per_km2 = total_dry_costs / Area_km2) %>% 
   select(procurement, Wet_cost_per_km2, n_nschools, Area_km2, dry_cost_per_km2)
