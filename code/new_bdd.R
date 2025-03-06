@@ -41,12 +41,44 @@ annual_breakdowndays <- Complete_data %>%
   group_by(pilot, Year) %>%
   summarise(
     n = n(),
-    mean_breakdown_days = mean(breakdown_days, na.rm = TRUE),
-    sd_breakdown_days = sd(breakdown_days, na.rm = TRUE)
-  )
+    mean_breakdown_days = mean(breakdown_days, na.rm = TRUE)
+  ) %>% 
+  select(-n) %>%
+  pivot_wider(names_from = Year, values_from = mean_breakdown_days) %>%
+  mutate(change = `2024` - `2023`,
+         change_percent = ((`2024` - `2023`)/`2023`)*100)
+
+write.xlsx(annual_breakdowndays, "data/annual_breakdowndays.xlsx")
   
   
+connected_kravanh <- Complete_data %>% 
+  filter(Activity  == "hgsf_full") %>%
+  filter(District == "Phnum Kravanh") %>% 
+  select(Commune, School_Code, `School name`, Year, breakdown_days) %>% 
+  mutate(roadconected = case_when(
+    `School name` == "Or Soam" ~ "Less Connected",
+    TRUE ~ "Connected"
+  )) %>% 
+  group_by(Year, roadconected) %>%
+  summarise(
+    n = n(),
+    mean_breakdown_days = mean(breakdown_days, na.rm = TRUE)
+  ) %>%
+  select(-n) %>%
+  pivot_wider(names_from = Year, values_from = mean_breakdown_days) %>% 
+  mutate(change = `2024` - `2023`,
+         change_percent = ((`2024` - `2023`)/`2023`)*100,
+         change_percent = abs(change_percent))
 
 
+write.xlsx(connected_kravanh, "data/connected_kravanh.xlsx")
 
+schools_sf %>% 
+  filter(District == "Phnum Kravanh") %>%
+  ggplot() + 
+  geom_sf() +
+  geom_sf_text(aes(label = SchoolName), size = 4) +
+  geom_sf(data = districts_sf %>% filter(District == "Phnum Kravanh"), fill = NA, color = "red") +
+  geom_sf(data = communes_sf %>% filter(Commune %in% c("Bak Chenhchien", "Leach", "Prongil", "Rokat", "Santreae", "	Samraong")),
+                                        fill = NA, color = "red")
 
