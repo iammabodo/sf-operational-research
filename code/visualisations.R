@@ -770,11 +770,6 @@ schools_sf <- st_as_sf(
   crs = 4326  # WGS 84 CRS (latitude/longitude)
 )
 
-schools_sf %>% 
-  filter(District == "Phnum Kravanh") %>% 
-  ggplot() +
-  geom_sf() +
-  geom_sf_text(aes(label = SchoolName), size = 2, family = "opensans") 
 # read the district level shapefile
 
 districts_sf <- st_read("data/shapefiles/WFP_PST_5Districts.shp") %>%
@@ -908,38 +903,81 @@ districts_sf <- districts_sf %>%
     nudge_y = if_else(District == "Ta Lou Senchey", 0.18, -0.005),
     nudge_x = if_else(District == "Ta Lou Senchey", -0.15, 0)
   )
-
+remote_schools <- "One of the most\n'inaccessible' schools,\n(Or Soam), is the biggest\nbeneficiary of district\ncentralisation"
 school_connect_graph <- ggplot() + 
   geom_sf(data = districts_sf, fill  = "#202040", color = "#E8F9FD", size = 1.5) +
   #geom_sf(data = water_in_boundaries, fill = "#478CCF", color = "#478CCF") + 
   geom_sf_text(
     data = districts_sf, 
-    aes(label = District), 
-    size = 3.5, 
+    aes(label = if_else(districts_sf$District != "Ta Lou Senchey", District, "")), 
+    size = 4.5, 
     fontface = "bold",
     color = districts_sf$text_color, 
     family = "opensans", 
     nudge_y = if_else(districts_sf$District == "Ta Lou Senchey", 0.18, -0.01),
     nudge_x = if_else(
       districts_sf$District == "Phnum Kravanh", -0.1, 
-      if_else(districts_sf$District == "Ta Lou Senchey", -0.12, 0)
+      if_else(districts_sf$District == "Ta Lou Senchey", -0.10, 0)
     )
   ) + 
   geom_sf(data = roads_in_boundaries, color =  "#FEFBF6", size = 0.05, alpha = 0.2) + 
   geom_sf(data = schools_sf, fill = "#E6B325", color = "#E6B325", aes(size = Students), alpha = 0.5, shape = 21) + 
-  coord_sf(expand = FALSE) +
+  coord_sf(expand = TRUE) +
   annotate(
-    "curve",
+    "text",
+    x = 103.4,
+    y = 12.64,
+    label = "Ta Lou\nSenchey",
+    size = 4.5,
+    family = "opensans",
+    fontface = "bold",
+    color = "#240750",
+    lineheight = 0.5,
+    hjust = 0
+  ) + 
+  annotate(
+    "segment",
     x = 103.5,
     xend = 103.6,
-    y = 12.62,
+    y = 12.60,
     yend = 12.53,
     color = "#240750",
-    curvature = -0.2,
+    #curvature = -0.2,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
+  annotate(
+    "text",
+    label = remote_schools,
+    x = 103.28,
+    y = 11.95,
+    size = 4.5,
+    family = "opensans",
+    lineheight = 0.5,
+    hjust = 0,
+    color = "#4D3509"
+  ) + 
+  annotate(
+    "segment",
+    x = 103.74,
+    xend = 103.58,
+    y = 12.23,
+    yend = 12.18,
+    color = "#E6B325",
+    linewidth = 0.25,
+    alpha = 0.5,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "first")) +
+  annotate(
+    "segment",
+    x = 103.58,
+    xend = 103.47,
+    y = 12.18,
+    yend = 12.03,
+    color = "#E6B325",
+    linewidth = 0.25,
+    alpha = 0.5,
     arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
   theme_void() +
   labs(
-    title = "Panel (B): School Connectedness (Road Network)",
+    title = "School Accessibility (Road Network)",
     size = "Average Eating Students"
   ) +
   theme(
@@ -955,7 +993,12 @@ school_connect_graph <- ggplot() +
   scale_size_continuous(range = c(0.3, 2.5)) +
   guides(size = guide_legend(title.position = "top", title.hjust = 0.5))
   
-  
+ggsave(
+  "figures/school_connect_graph.png",
+  plot = school_connect_graph,
+  width = 4.35, height = 6.5, dpi = 300,
+  bg = "white"
+)
   
 complete_graph <- school_density_graph + school_connect_graph +
   plot_layout(widths = c(1, 1)) +
