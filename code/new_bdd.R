@@ -75,11 +75,30 @@ connected_kravanh <- Complete_data %>%
 write.xlsx(connected_kravanh, "data/connected_kravanh.xlsx")
 
 schools_sf %>% 
-  filter(District == "Phnum Kravanh") %>%
+  filter(District == "Kandieng") %>%
   ggplot() + 
   geom_sf() +
   geom_sf_text(aes(label = SchoolName), size = 4) +
-  geom_sf(data = districts_sf %>% filter(District == "Phnum Kravanh"), fill = NA, color = "red") +
-  geom_sf(data = communes_sf %>% filter(Commune %in% c("Bak Chenhchien", "Leach", "Prongil", "Rokat", "Santreae", "	Samraong")),
-                                        fill = NA, color = "red")
+  geom_sf(data = districts_sf %>% filter(District == "Kandieng"), fill = NA, color = "red") +
+  geom_sf_text(aes(label = SchoolName), size = 4)
 
+Bakan_bddays <- Complete_data %>% 
+  filter(District == "Bakan") %>%
+  mutate(
+    connected = case_when(
+      `School name` == "Sras Makak" | `School name` == "Anlung Kray"| `School name` == "O Ta Pong" |
+        `School name` == "Wat Chre" | `School name` == "Robos Raing" | `School name` == "Prasat" |
+        `School name` == "Ko Khsach" | `School name` == "Kdat" | `School name` == "Angkanh" |
+        `School name` == "Tuol Leap" ~ "Not Connected",
+      TRUE ~ "Connected"
+    )
+  ) %>% 
+  group_by(Year, connected) %>%
+  summarise(
+    n = n(),
+    mean_breakdown_days = mean(breakdown_days, na.rm = TRUE)
+  )
+
+
+Complete_data %>% 
+  filter(District == "Bakan") %>% pull(`School name`)
