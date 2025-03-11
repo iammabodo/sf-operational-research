@@ -120,22 +120,61 @@ adjusted_costs_data <- clean_districts_clipped %>%
 write.xlsx(adjusted_costs_data, "data/adjusted_costs_data.xlsx")
 
 
-adjusted_costs_data %>% 
-  mutate(dry_cost_per_km2 = dry_cost_per_km2 * 100) %>% 
-  ggplot(aes(x = procurement, y = dry_cost_per_km2, fill = procurement)) +
+adjusted_dry_costs_graph <- adjusted_costs_data %>% 
+  mutate(dry_cost_per_km2 = dry_cost_per_km2 * 100,
+         procurement = if_else(procurement == "Non-Procurement Pilots", "Non-Procurement Districts", procurement),
+         procurement = as_factor(procurement),
+         procurement = str_wrap(procurement, width = 10)) %>% 
+  ggplot(aes(x = fct_reorder(procurement,dry_cost_per_km2) , y = dry_cost_per_km2, fill = procurement)) +
   geom_bar(stat = "identity") +
-  labs(title = "Wet food costs per km² by procurement strategy",
-       x = "Procurement strategy",
-       y = "Wet food costs per km²") +
+  scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
+  coord_flip() +
+  labs(title = "Dry commodities costs per km², by procurement modality, per supply",
+       x = "",
+       y = "") +
   theme_minimal() +
-  theme(legend.position = "none") +
-  geom_text(aes(label = round(Wet_cost_per_km2, 2)), vjust = -0.5) +
-  scale_y_continuous(labels = scales::dollar) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  geom_hline(yintercept = mean(adjusted_costs_data$Wet_cost_per_km2), linetype = "dashed", color = "red") +
-  geom_text(aes(x = 1.5, y = mean(adjusted_costs_data$Wet_cost_per_km2), label = "Mean"), vjust = -0.5, color = "red")
+  theme(legend.position = "none",
+        plot.title = element_text(family = "opensans", size = 18, face = "bold", hjust = 0),
+        plot.title.position = "plot",
+        plot.background = element_rect(fill = "white"),
+        axis.text.y = element_text(family = "opensans", size = 13, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
+        axis.text.x = element_text(family = "opensans", size = 13, face = "bold"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
+        axis.ticks = element_blank()) +
+  scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢"))) +
+  geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) 
 
+ggsave("figures/adjusted_dry_costs_graph.png", adjusted_dry_costs_graph, width = 6, height = 4, dpi = 300)
 
+adjusted_wet_costs_graph <- adjusted_costs_data %>% 
+  mutate(wet_cost_per_km2 = Wet_cost_per_km2 * 100,
+         procurement = if_else(procurement == "Non-Procurement Pilots", "Non-Procurement Districts", procurement),
+         procurement = as_factor(procurement),
+         procurement = str_wrap(procurement, width = 10)) %>% 
+  ggplot(aes(x = fct_reorder(procurement,wet_cost_per_km2) , y = wet_cost_per_km2, fill = procurement)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
+  coord_flip() +
+  labs(title = "Wet Commodities costs per km², by procurement modality, per supply",
+       x = "",
+       y = "") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        plot.title = element_text(family = "opensans", size = 18, face = "bold", hjust = 0),
+        plot.title.position = "plot",
+        plot.background = element_rect(fill = "white"),
+        axis.text.y = element_text(family = "opensans", size = 13, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
+        axis.text.x = element_text(family = "opensans", size = 13, face = "bold"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
+        axis.ticks = element_blank()) +
+  scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢"))) +
+  geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) 
+
+ggsave("figures/adjusted_wet_costs_graph.png", adjusted_wet_costs_graph, width = 6, height = 4, dpi = 300)
 
 
 
