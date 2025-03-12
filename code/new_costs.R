@@ -194,6 +194,7 @@ adjusted_wet_costs_graph <- adjusted_costs_data %>%
   ) + 
   geom_point(aes(x = 1, y = 13.8), color = "#56021F", size = 1) +
   geom_point(aes(x = 1, y = 23), color = "#56021F", size = 1) +
+  geom_rect(aes(xmin = 0.55, xmax = 1.45, ymin = 8, ymax = 28.2), fill = "#F4CCE9", alpha = 0.12, color = NA) +
   labs(title = "Wet Commodities costs per km², by procurement modality, per supply",
        x = "",
        y = "") +
