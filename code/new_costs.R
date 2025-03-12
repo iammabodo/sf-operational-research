@@ -129,6 +129,8 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
   coord_flip() +
+  geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) +
+  geom_hline(yintercept = 54.5, color = "#56021F", linewidth = 0.45, linetype = "dashed") +
   labs(title = "Dry commodities costs per km², by procurement modality, per supply",
        x = "",
        y = "") +
@@ -143,8 +145,7 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
         panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
         axis.ticks = element_blank()) +
-  scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢"))) +
-  geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) 
+  scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢")))
 
 ggsave("figures/adjusted_dry_costs_graph.png", adjusted_dry_costs_graph, width = 6, height = 4, dpi = 300)
 
@@ -156,23 +157,57 @@ adjusted_wet_costs_graph <- adjusted_costs_data %>%
   ggplot(aes(x = fct_reorder(procurement,wet_cost_per_km2) , y = wet_cost_per_km2, fill = procurement)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
+  scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢"))) +
+  geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) +
+  geom_hline(yintercept = 28.2, color = "#56021F", linewidth = 0.45, linetype = "dashed") + 
   coord_flip() +
+  annotate(
+    "segment",
+    x = 1,
+    xend = 1,
+    y = 8.2,
+    yend = 13.6,
+    color = "#56021F",
+    size = 0.25,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "first")
+  ) + 
+  annotate(
+    "segment",
+    x = 1,
+    xend = 1,
+    y = 23,
+    yend = 28,
+    color = "#56021F",
+    size = 0.25,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")
+  ) +
+  annotate(
+    "text",
+    x = 1,
+    y = 14.4,
+    label = "71% difference in costs\nbetween 'district' and\nnon-procurement pilot\ndistricts",
+    family = "opensans",
+    size = 4.5,
+    color = "#56021F",
+    hjust = 0,
+    lineheight = 0.5
+  ) + 
+  geom_point(aes(x = 1, y = 13.8), color = "#56021F", size = 1) +
+  geom_point(aes(x = 1, y = 23), color = "#56021F", size = 1) +
   labs(title = "Wet Commodities costs per km², by procurement modality, per supply",
        x = "",
        y = "") +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(family = "opensans", size = 18, face = "bold", hjust = 0),
+        plot.title = element_text(family = "opensans", size = 18, colour = scales::alpha("#56021F", 0.8), face = "bold", hjust = 0),
         plot.title.position = "plot",
         plot.background = element_rect(fill = "white"),
         axis.text.y = element_text(family = "opensans", size = 13, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
         axis.text.x = element_text(family = "opensans", size = 13, face = "bold"),
         panel.grid.major.y = element_blank(),
         panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
-        axis.ticks = element_blank()) +
-  scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢"))) +
-  geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) 
+        panel.grid.major.x = element_line(color = scales::alpha("#56021F", 0.1), size = 0.2, linetype = "dashed"),
+        axis.ticks = element_blank()) 
 
 ggsave("figures/adjusted_wet_costs_graph.png", adjusted_wet_costs_graph, width = 6, height = 4, dpi = 300)
 
