@@ -131,16 +131,52 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
   coord_flip() +
   geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) +
   geom_hline(yintercept = 54.5, color = "#56021F", linewidth = 0.45, linetype = "dashed") +
-  labs(title = "Dry commodities costs per km², by procurement modality, per supply",
+  geom_rect(aes(xmin = 0.55, xmax = 1.45, ymin = 36, ymax = 54.5), fill = "#F4CCE9", alpha = 0.12, color = NA) +
+  geom_point(aes(x = 1, y = 45.4), colour = "#F4CCE9", fill = "#56021F", size = 20) +
+  annotate(
+    "text",
+    x = 1,
+    y = 49,
+    label = "35%",
+    family = "opensans",
+    fontface = "bold",
+    size = 10,
+    color = "#56021F",
+    hjust = 1,
+    lineheight = 0.5
+  ) + 
+  annotate(
+    "segment",
+    x = 1,
+    xend = 1,
+    y = 36,
+    yend = 41,
+    color = "#56021F",
+    alpha = 0.5,
+    size = 0.25,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "first")
+  ) +
+  annotate(
+    "segment",
+    x = 1,
+    xend = 1,
+    y = 49.7,
+    yend = 54.5,
+    color = "#56021F",
+    alpha = 0.5,
+    size = 0.25,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")
+  ) +
+  labs(title = "Dry commodities costs per km², by procurement modality,\nper single supply",
        x = "",
        y = "") +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(family = "opensans", size = 18, face = "bold", hjust = 0),
+        plot.title = element_text(family = "opensans", size = 20, lineheight = 0.6, face = "bold", hjust = 0),
         plot.title.position = "plot",
         plot.background = element_rect(fill = "white"),
-        axis.text.y = element_text(family = "opensans", size = 13, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
-        axis.text.x = element_text(family = "opensans", size = 13, face = "bold"),
+        axis.text.y = element_text(family = "opensans", size = 15, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
+        axis.text.x = element_text(family = "opensans", size = 15, face = "bold"),
         panel.grid.major.y = element_blank(),
         panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
