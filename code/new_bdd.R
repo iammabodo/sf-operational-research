@@ -74,13 +74,6 @@ connected_kravanh <- Complete_data %>%
 
 write.xlsx(connected_kravanh, "data/connected_kravanh.xlsx")
 
-schools_sf %>% 
-  filter(District == "Kandieng") %>%
-  ggplot() + 
-  geom_sf() +
-  geom_sf_text(aes(label = SchoolName), size = 4) +
-  geom_sf(data = districts_sf %>% filter(District == "Kandieng"), fill = NA, color = "red") +
-  geom_sf_text(aes(label = SchoolName), size = 4)
 
 Bakan_bddays <- Complete_data %>% 
   filter(District == "Bakan") %>%
@@ -100,5 +93,3 @@ Bakan_bddays <- Complete_data %>%
   )
 
 
-Complete_data %>% 
-  filter(District == "Bakan") %>% pull(`School name`)
