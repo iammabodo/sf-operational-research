@@ -143,42 +143,6 @@ supplier_costs <- average_wetcosts %>%
   mutate(cost_type = case_when(
     cost_type == "wet_cost_per_school" ~ "Wet Commodities",
     cost_type == "dry_cost_per_school" ~ "Dry Commodities"))
- 
-
-
-supplier_costs_graph <- supplier_costs %>% 
-  ggplot(aes(x = cost_per_school, y = procurement)) +
-  geom_bar(stat = "identity", aes(fill = cost_type), position = "dodge", width = 0.6) + # Reduce width slightly
-  scale_y_discrete(expand = expansion(c(0.2, 0))) +  # Remove space between bars and axis
-  scale_x_continuous(position = "top", labels = scales::dollar_format(prefix = "$")) +  # Move x-axis labels closer
-  geom_vline(xintercept = 0, color = "#088395", size = 0.5) +  
-  labs(
-    title = "Suppliers in Community Centralisation incured lower\ncosts per school compared to other procurement models.",
-    x = "",
-    y = "",
-    caption = "Source: Survey Data",
-    color = ""
-  ) +
-  theme_minimal() +
-  theme(
-    plot.background = element_rect(fill = "#ECEFDC", color = "#ECEFDC"),
-    plot.title = element_text(family = "garamond", size = 18, face = "bold", colour = "#088395", lineheight = 0.8),
-    plot.title.position = "plot",
-    plot.caption = element_text(family = "garamond", size = 8, colour = "#088395"),
-    plot.caption.position = "plot",
-    axis.title = element_blank(),
-    axis.text.y = element_text(family = "garamond", size = 16, colour = "#088395", face = "bold",
-                               margin = margin(r = -15)),  # Move y-axis labels closer
-    axis.text.x = element_text(family = "garamond", size = 16, colour = "#088395", face = "bold"),  # Move x-axis labels closer
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor.x = element_blank(),
-    panel.grid.major.x = element_line(color = "#E0E6C9", size = 0.6, linetype = "dashed"),
-    legend.position = "bottom",
-    legend.title = element_blank(),
-    legend.text = element_text(family = "garamond", size = 12, colour = "#088395", face = "bold")
-  )
-
-ggsave("figures/supplier_costs_graph.png", supplier_costs_graph, width = 6.26, height = 5.02, dpi = 200)
 
 
 ######################################################################################################  
@@ -482,6 +446,150 @@ complete_survey_graph <- ImprovementGraphPP_01 + ImprovementGraphPP_02 + plot_la
 
 
 ggsave("figures/complete_survey_graph.png", complete_survey_graph, width = 7.46, height = 6.52, dpi = 300, units = "in", device = "png")
+
+
+#######################################################################################
+
+# Map on the school connectedness
+
+
+districts_sf <- districts_sf %>%
+  mutate(
+    text_color = if_else(District == "Ta Lou Senchey", "#240750", "#E4E0E1"), # Specify your desired colors
+    nudge_y = if_else(District == "Ta Lou Senchey", 0.18, -0.005),
+    nudge_x = if_else(District == "Ta Lou Senchey", -0.15, 0)
+  )
+remote_schools <- "One of the most\n'inaccessible' schools,\n(Or Soam), is the biggest\nbeneficiary of district\ncentralisation"
+school_connect_graph <- ggplot() + 
+  geom_sf(data = districts_sf, fill  = "#202040", color = "#E8F9FD", size = 1.5) +
+  #geom_sf(data = water_in_boundaries, fill = "#478CCF", color = "#478CCF") + 
+  geom_sf_text(
+    data = districts_sf, 
+    aes(label = if_else(districts_sf$District != "Ta Lou Senchey", District, "")), 
+    size = 7, 
+    fontface = "bold",
+    color = districts_sf$text_color, 
+    family = "opensans", 
+    nudge_y = if_else(districts_sf$District == "Ta Lou Senchey", 0.18, -0.01),
+    nudge_x = if_else(
+      districts_sf$District == "Phnum Kravanh", -0.1, 
+      if_else(districts_sf$District == "Ta Lou Senchey", -0.10, 0)
+    )
+  ) + 
+  geom_sf(data = roads_in_boundaries, color =  "#FEFBF6", size = 0.05, alpha = 0.2) + 
+  geom_sf(data = schools_sf, fill = "#E6B325", color = "#E6B325", aes(size = Students), alpha = 0.5, shape = 21) + 
+  coord_sf(expand = FALSE) +
+  annotate(
+    "text",
+    x = 103.4,
+    y = 12.64,
+    label = "Ta Lou\nSenchey",
+    size = 7,
+    family = "opensans",
+    fontface = "bold",
+    color = "#240750",
+    lineheight = 0.5,
+    hjust = 0
+  ) + 
+  annotate(
+    "segment",
+    x = 103.5,
+    xend = 103.6,
+    y = 12.60,
+    yend = 12.53,
+    color = "#240750",
+    #curvature = -0.2,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
+  annotate(
+    "text",
+    label = remote_schools,
+    x = 103.1,
+    y = 11.95,
+    size = 8,
+    family = "opensans",
+    lineheight = 0.5,
+    hjust = 0,
+    color = "#4D3509"
+  ) + 
+  annotate(
+    "segment",
+    x = 103.74,
+    xend = 103.58,
+    y = 12.23,
+    yend = 12.18,
+    color = "#E6B325",
+    linewidth = 0.7,
+    #alpha = 0.5,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "first")) +
+  annotate(
+    "segment",
+    x = 103.58,
+    xend = 103.47,
+    y = 12.18,
+    yend = 12.03,
+    color = "#E6B325",
+    linewidth = 0.7,
+    #alpha = 0.5,
+    arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
+  geom_point(
+    data = data.frame(x = 103.7632, y = 12.23453), 
+    aes(x = x, y = y), 
+    size = 5,  # Adjust as needed
+    color = "#E6B325",
+    fill = NA,
+    #alpha = 0.5,
+    stroke = 1.5,
+    shape = 21
+  ) +
+  theme_void() +
+  labs(
+    title = "School Accessibility (Road Network)",
+    size = "Average Eating Students"
+  ) +
+  theme(
+    plot.margin = margin(0, 0, 0, 0),
+    plot.title = element_text(size = 20, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 10)),
+    legend.position = "none",
+    legend.title = element_text(size = 11, family = "opensans", face = "bold", margin = margin(b = -0.5)),
+    legend.text = element_text(size = 10, face = "bold", family = "opensans", margin = margin(t = 2)),
+    legend.box.margin = margin(0, 0, 0, 0),
+    plot.caption = element_text(size = 11, family = "opensans", hjust = 0, face = "bold"),
+    plot.caption.position = "plot"
+  ) + 
+  scale_size_continuous(range = c(0.3, 2.5)) +
+  guides(size = guide_legend(title.position = "top", title.hjust = 0.5))
+
+ggsave(
+  "figures/school_connect_graph.png",
+  plot = school_connect_graph,
+  width = 6.5, height = 6.5, dpi = 300,
+  bg = "transparent"
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
