@@ -575,18 +575,20 @@ clean_bdd <- annual_breakdowndays %>%
   mutate(change_percent = abs(change_percent)) %>% 
   pivot_longer(cols = c(`2023`, `2024`), names_to = "year", values_to = "breakdown_days") %>% 
   mutate(pilot = case_when(
-    pilot == "Commune Centralisation" ~  "Commune\nCentralisation",
-    pilot == "District Centralisation" ~ "District\nCentralisation",
+    pilot == "Commune Centralisation" ~  "Commune\nCentralisation\n(Ta Lou Senchey)",
+    pilot == "District Centralisation" ~ "District\nCentralisation\n(Phnum Kravanh)",
     pilot == "Non-Pilot" ~ "Non-Pilot\n(All other HGSF\ndistricts)"
   )) %>%
-  mutate(year = factor(year, levels = c("2024", "2023")),
-         pilot = factor(pilot, levels = c("Non-Pilot\n(All other HGSF\ndistricts)", "Commune\nCentralisation", "District\nCentralisation")))
+  mutate(year = factor(year, levels = c("2023", "2024")),
+         pilot = factor(pilot, levels = c("Non-Pilot\n(All other HGSF\ndistricts)", 
+                                          "Commune\nCentralisation\n(Ta Lou Senchey)", 
+                                          "District\nCentralisation\n(Phnum Kravanh)")))
 
 kravanh_clean <- connected_kravanh %>% 
   select(-change) %>%
   mutate(change_percent = abs(change_percent)) %>% 
   pivot_longer(cols = c(`2023`, `2024`), names_to = "year", values_to = "breakdown_days") %>%
-  mutate(year = factor(year, levels = c("2024", "2023"))) %>% 
+  mutate(year = factor(year, levels = c("2023", "2024"))) %>% 
   rename("pilot" = roadconected) %>% 
   mutate(pilot = factor(pilot))
 
@@ -597,14 +599,73 @@ complete_bdd <- kravanh_clean %>%
 
 
 
-complete_bdd %>% 
-  ggplot(aes(x =  pilot, y = breakdown_days)) +
-  geom_bar(stat = "identity", position = "stack", width = 0.5) 
+bbdays_heatmap <- ggplot(clean_bdd, aes(x = year, y = pilot, fill = breakdown_days)) +
+  geom_tile() +
+  geom_text(aes(label = round(breakdown_days, 0)), color = if_else(clean_bdd$year == "2024", "#500073", "#D4EBF8"), size = 9,
+            family = "opensans", fontface = "bold") +
+  scale_fill_gradient(low = "#A1E3F9", high = "#2A004E") +
+  labs(title = "Average Breakdown Days by Procurement Model and\nAnnual School Year",
+       fill = "Breakdown Days") +
+  theme_minimal() + 
+  theme(
+    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
+    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#2A004E", hjust = 0, lineheight = 0.5),
+    plot.title.position = "plot",
+    plot.subtitle = element_text(family = "opensans", size = 15, colour = "#2A004E", lineheight = 0.5, face = "bold.italic",
+                                 margin = margin(b = 0)), 
+    plot.caption = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0),
+    axis.text = element_text(family = "opensans", size = 18, colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0.5,
+                                margin = margin(b = 1.5, t = 0)),
+    legend.title.position = "top",
+    legend.text = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0.5),
+    legend.box.margin = margin(b = 0, t= -10),
+    legend.key.height = unit(0.2, "cm"),
+    legend.key.width = unit(1.2, "cm"),
+    plot.caption.position = "plot"
+  ) 
+
+ggsave("figures/bbdays_heatmap.png", bbdays_heatmap, width = 5.4, 
+       height = 4, dpi = 300, units = "in", device = "png", bg = "white")  
+
+
+# Percentage change heatmap
+
+bbdays_heatmap <- ggplot(clean_bdd %>% filter(year == 2024), aes(x = year, y = pilot, fill = change_percent)) +
+  geom_tile() +
+  geom_text(aes(label = paste0(round(change_percent, 0), "%")), color =  "#D4EBF8", size = 9,
+            family = "opensans", fontface = "bold") +
+  scale_fill_gradient(low = "#EAD196", high = "#7D0A0A") +
+  labs(title = "Percentage\nDecrease",
+       fill = "Percentage Change", y = "") +
+  theme_minimal() + 
+  theme(
+    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
+    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#7D0A0A", hjust = 0, lineheight = 0.5),
+    plot.title.position = "plot",
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(family = "opensans", size = 18, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5,
+                              margin = margin(b = 45)),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "right",
+    legend.title = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5,
+                                margin = margin(t = 1.5, b = 0)),
+    legend.title.position = "left",
+    legend.text = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5),
+    legend.box.margin = margin(b = 0, l= -10),
+    legend.key.height = unit(0.9, "cm"),
+    legend.key.width = unit(0.2, "cm")) + 
+  guides(fill = guide_colourbar(title.theme = element_text(angle = 90)))
   
 
-
-
-
+ggsave("figures/bbdays_heatmap_change.png", bbdays_heatmap, width = 1.7, 
+       height = 4, dpi = 300, units = "in", device = "png", bg = "white")
 
 
 
