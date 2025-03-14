@@ -567,15 +567,40 @@ ggsave(
 )
 
 
+#######################################################################################
+
+clean_bdd <- annual_breakdowndays %>% 
+  filter(pilot != "PursatNon-Pilot") %>% 
+  select(-change) %>% 
+  mutate(change_percent = abs(change_percent)) %>% 
+  pivot_longer(cols = c(`2023`, `2024`), names_to = "year", values_to = "breakdown_days") %>% 
+  mutate(pilot = case_when(
+    pilot == "Commune Centralisation" ~  "Commune\nCentralisation",
+    pilot == "District Centralisation" ~ "District\nCentralisation",
+    pilot == "Non-Pilot" ~ "Non-Pilot\n(All other HGSF\ndistricts)"
+  )) %>%
+  mutate(year = factor(year, levels = c("2024", "2023")),
+         pilot = factor(pilot, levels = c("Non-Pilot\n(All other HGSF\ndistricts)", "Commune\nCentralisation", "District\nCentralisation")))
+
+kravanh_clean <- connected_kravanh %>% 
+  select(-change) %>%
+  mutate(change_percent = abs(change_percent)) %>% 
+  pivot_longer(cols = c(`2023`, `2024`), names_to = "year", values_to = "breakdown_days") %>%
+  mutate(year = factor(year, levels = c("2024", "2023"))) %>% 
+  rename("pilot" = roadconected) %>% 
+  mutate(pilot = factor(pilot))
+
+complete_bdd <- kravanh_clean %>% 
+  rbind(clean_bdd)
 
 
 
 
 
-
-
-
-
+complete_bdd %>% 
+  ggplot(aes(x =  pilot, y = breakdown_days)) +
+  geom_bar(stat = "identity", position = "stack", width = 0.5) 
+  
 
 
 
