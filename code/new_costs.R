@@ -119,7 +119,10 @@ adjusted_costs_data <- clean_districts_clipped %>%
 
 write.xlsx(adjusted_costs_data, "data/adjusted_costs_data.xlsx")
 
-
+dataforpoint <- tibble(
+  x= 1,
+  y = 45.4
+)
 adjusted_dry_costs_graph <- adjusted_costs_data %>% 
   mutate(dry_cost_per_km2 = dry_cost_per_km2 * 100,
          procurement = if_else(procurement == "Non-Procurement Pilots", "Non-Procurement Districts", procurement),
@@ -130,9 +133,9 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
   scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
   coord_flip() +
   geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) +
-  geom_hline(yintercept = 54.5, color = "#56021F", linewidth = 0.45, linetype = "dashed") +
+  geom_hline(yintercept = 54.5, color = "#56021F", linewidth = 0.25, linetype = "dashed") +
   geom_rect(aes(xmin = 0.55, xmax = 1.45, ymin = 36, ymax = 54.5), fill = "#F4CCE9", alpha = 0.12, color = NA) +
-  geom_point(aes(x = 1, y = 45.4), colour = "#F4CCE9", fill = "#56021F", size = 20) +
+  geom_point(data = dataforpoint , aes(x = x, y = y), colour = "#F4CCE9", fill = "#56021F", size = 20) +
   annotate(
     "text",
     x = 1,
@@ -172,18 +175,18 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
        y = "") +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(family = "opensans", size = 20, lineheight = 0.6, face = "bold", hjust = 0),
+        plot.title = element_text(family = "opensans", size = 22, lineheight = 0.6, color = "#56021F", face = "bold", hjust = 0),
         plot.title.position = "plot",
-        plot.background = element_rect(fill = "white"),
-        axis.text.y = element_text(family = "opensans", size = 15, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
-        axis.text.x = element_text(family = "opensans", size = 15, face = "bold"),
+        plot.background = element_rect(fill = "#E0F0E1", colour = "#E0F0E1"),
+        axis.text.y = element_text(family = "opensans", size = 18, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
+        axis.text.x = element_text(family = "opensans", size = 18, face = "bold"),
         panel.grid.major.y = element_blank(),
         panel.grid.minor.x = element_blank(),
-        panel.grid.major.x = element_line(color = "grey", size = 0.5, linetype = "dashed"),
+        panel.grid.major.x = element_line(color = scales::alpha("grey", 0.5), size = 0.2, linetype = "dashed"),
         axis.ticks = element_blank()) +
   scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢")))
 
-ggsave("figures/adjusted_dry_costs_graph.png", adjusted_dry_costs_graph, width = 6, height = 4, dpi = 300)
+ggsave("figures/adjusted_dry_costs_graph.png", adjusted_dry_costs_graph, width = 6.82, height = 4.64, dpi = 300)
 
 adjusted_wet_costs_graph <- adjusted_costs_data %>% 
   mutate(wet_cost_per_km2 = Wet_cost_per_km2 * 100,
@@ -195,7 +198,7 @@ adjusted_wet_costs_graph <- adjusted_costs_data %>%
   scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
   scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢"))) +
   geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) +
-  geom_hline(yintercept = 28.2, color = "#56021F", linewidth = 0.45, linetype = "dashed") + 
+  geom_hline(yintercept = 28.2, color = "#56021F", linewidth = 0.25, linetype = "dashed") + 
   coord_flip() +
   annotate(
     "segment",
@@ -220,33 +223,35 @@ adjusted_wet_costs_graph <- adjusted_costs_data %>%
   annotate(
     "text",
     x = 1,
-    y = 14.4,
-    label = "71% difference in costs\nbetween 'district' and\nnon-procurement pilot\ndistricts",
+    y = 18.5,
+    label = "71%\ndifference\nin costs",
     family = "opensans",
-    size = 4.5,
+    size = 9,
     color = "#56021F",
-    hjust = 0,
-    lineheight = 0.5
+    hjust = 0.5,
+    lineheight = 0.5,
+    fontface = "bold"
   ) + 
   geom_point(aes(x = 1, y = 13.8), color = "#56021F", size = 1) +
   geom_point(aes(x = 1, y = 23), color = "#56021F", size = 1) +
   geom_rect(aes(xmin = 0.55, xmax = 1.45, ymin = 8, ymax = 28.2), fill = "#F4CCE9", alpha = 0.12, color = NA) +
-  labs(title = "Wet Commodities costs per km², by procurement modality, per supply",
+  labs(title = "Wet Commodities costs per km², by procurement modality,\nper single supply",
        x = "",
        y = "") +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(family = "opensans", size = 18, colour = scales::alpha("#56021F", 0.8), face = "bold", hjust = 0),
+        plot.title = element_text(family = "opensans", size = 22, colour = "#56021F", 
+                                  face = "bold", hjust = 0, lineheight = 0.6),
         plot.title.position = "plot",
-        plot.background = element_rect(fill = "white"),
-        axis.text.y = element_text(family = "opensans", size = 13, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
-        axis.text.x = element_text(family = "opensans", size = 13, face = "bold"),
+        plot.background = element_rect(fill = "#E0F0E1", colour = "#E0F0E1"),
+        axis.text.y = element_text(family = "opensans", size = 18, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
+        axis.text.x = element_text(family = "opensans", size = 18, face = "bold"),
         panel.grid.major.y = element_blank(),
         panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_line(color = scales::alpha("#56021F", 0.1), size = 0.2, linetype = "dashed"),
         axis.ticks = element_blank()) 
 
-ggsave("figures/adjusted_wet_costs_graph.png", adjusted_wet_costs_graph, width = 6, height = 4, dpi = 300)
+ggsave("figures/adjusted_wet_costs_graph.png", adjusted_wet_costs_graph, width = 6.42, height = 4.6, dpi = 300)
 
 
 
