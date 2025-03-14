@@ -57,8 +57,8 @@ connected_kravanh <- Complete_data %>%
   filter(District == "Phnum Kravanh") %>% 
   select(Commune, School_Code, `School name`, Year, breakdown_days) %>% 
   mutate(roadconected = case_when(
-    `School name` == "Or Soam" ~ "Less Connected",
-    TRUE ~ "Connected"
+    `School name` == "Or Soam" ~ "Less Connected\nSchools",
+    TRUE ~ "Connected\nSchools"
   )) %>% 
   group_by(Year, roadconected) %>%
   summarise(

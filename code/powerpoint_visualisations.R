@@ -667,6 +667,80 @@ bbdays_heatmap <- ggplot(clean_bdd %>% filter(year == 2024), aes(x = year, y = p
 ggsave("figures/bbdays_heatmap_change.png", bbdays_heatmap, width = 1.7, 
        height = 4, dpi = 300, units = "in", device = "png", bg = "white")
 
+##################################################################################################
+
+#Kravanh Breakdown Days
+
+kravanh_graph <- kravanh_clean %>% 
+  ggplot(aes(x = year, y = pilot, fill = breakdown_days)) +
+  geom_tile() +
+  geom_text(aes(label = round(breakdown_days, 0)), color = if_else(kravanh_clean$year == "2024", "#500073", "#D4EBF8"), size = 9,
+            family = "opensans", fontface = "bold") +
+  scale_fill_gradient(low = "#A1E3F9", high = "#2A004E") +
+  labs(title = "Average Breakdown Days by level of road\naccessibility and Annual School Year",
+       fill = "Breakdown Days") +
+  theme_minimal() +
+  theme(
+    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
+    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#2A004E", hjust = 0, lineheight = 0.5),
+    plot.title.position = "plot",
+    plot.subtitle = element_text(family = "opensans", size = 15, colour = "#2A004E", lineheight = 0.5, face = "bold.italic",
+                                 margin = margin(b = 0)), 
+    plot.caption = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0),
+    axis.text = element_text(family = "opensans", size = 18, colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0.5,
+                                margin = margin(b = 1.5, t = 0)),
+    legend.title.position = "top",
+    legend.text = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0.5),
+    legend.box.margin = margin(b = 0, t= -10),
+    legend.key.height = unit(0.2, "cm"),
+    legend.key.width = unit(1.2, "cm"),
+    plot.caption.position = "plot"
+  )
+
+ggsave("figures/kravanh_graph.png", kravanh_graph, width = 4.5, 
+       height = 2.5, dpi = 300, units = "in", device = "png", bg = "white")  
+
+
+# Kravan percentage change
+
+kravanh_graph_heatmap <- kravanh_clean %>% 
+  filter(year == 2024) %>%
+  ggplot(aes(x = year, y = pilot, fill = change_percent)) +
+  geom_tile() +
+  geom_text(aes(label = paste0(round(change_percent, 0), "%")), color =  "#D4EBF8", size = 9,
+            family = "opensans", fontface = "bold") +
+  scale_fill_gradient(low = "#EAD196", high = "#7D0A0A") +
+  labs(title = "Percentage\nDecrease",
+       fill = "% Change", y = "") +
+  theme_minimal() + 
+  theme(
+    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
+    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#7D0A0A", hjust = 0, lineheight = 0.5),
+    plot.title.position = "plot",
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(family = "opensans", size = 18, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5,
+                              margin = margin(b = 45)),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "right",
+    legend.title = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5,
+                                margin = margin(t = 1.5, b = 0)),
+    legend.title.position = "left",
+    legend.text = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5),
+    legend.box.margin = margin(b = 0, l= -10),
+    legend.key.height = unit(0.5, "cm"),
+    legend.key.width = unit(0.2, "cm")) + 
+  guides(fill = guide_colourbar(title.theme = element_text(angle = 90)))
+
+ggsave("figures/kravanh_graph_heatmap.png", kravanh_graph_heatmap, width = 1.7, 
+       height = 2.5, dpi = 300, units = "in", device = "png", bg = "white")
+
 
 
 
