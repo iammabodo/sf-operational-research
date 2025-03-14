@@ -458,6 +458,9 @@ districts_sf <- districts_sf %>%
     text_color = if_else(District == "Ta Lou Senchey", "#240750", "#E4E0E1"), # Specify your desired colors
     nudge_y = if_else(District == "Ta Lou Senchey", 0.18, -0.005),
     nudge_x = if_else(District == "Ta Lou Senchey", -0.15, 0)
+  ) %>% 
+  filter(
+    !(District %in% c("Bakan", "Krakor", "Kandieng"))
   )
 remote_schools <- "One of the most\n'inaccessible' schools,\n(Or Soam), is the biggest\nbeneficiary of district\ncentralisation"
 school_connect_graph <- ggplot() + 
@@ -476,14 +479,16 @@ school_connect_graph <- ggplot() +
       if_else(districts_sf$District == "Ta Lou Senchey", -0.10, 0)
     )
   ) + 
-  geom_sf(data = roads_in_boundaries, color =  "#FEFBF6", size = 0.05, alpha = 0.2) + 
-  geom_sf(data = schools_sf, fill = "#E6B325", color = "#E6B325", aes(size = Students), alpha = 0.5, shape = 21) + 
+  geom_sf(data = roads_in_boundaries %>% 
+            filter(!(District %in% c("Bakan", "Krakor", "Kandieng"))), color =  "#FEFBF6", size = 0.05, alpha = 0.2) + 
+  geom_sf(data = schools_sf  %>% 
+            filter(!(District %in% c("Bakan", "Krakor", "Kandieng"))), fill = "#E6B325", color = "#E6B325", aes(size = Students), alpha = 0.5, shape = 21) + 
   coord_sf(expand = FALSE) +
   annotate(
     "text",
-    x = 103.4,
-    y = 12.64,
-    label = "Ta Lou\nSenchey",
+    x = 103.9,
+    y = 12.57,
+    label = "Ta Lou\nSenchey\nDistrict",
     size = 7,
     family = "opensans",
     fontface = "bold",
@@ -492,13 +497,13 @@ school_connect_graph <- ggplot() +
     hjust = 0
   ) + 
   annotate(
-    "segment",
-    x = 103.5,
-    xend = 103.6,
+    "curve",
+    x = 103.89,
+    xend = 103.7,
     y = 12.60,
     yend = 12.53,
     color = "#240750",
-    #curvature = -0.2,
+    curvature = 0.2,
     arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")) +
   annotate(
     "text",
@@ -543,12 +548,12 @@ school_connect_graph <- ggplot() +
   ) +
   theme_void() +
   labs(
-    title = "School Accessibility (Road Network)",
+    title = "School Accessibility (Road Network)\nin the pilot districts",
     size = "Average Eating Students"
   ) +
   theme(
     plot.margin = margin(0, 0, 0, 0),
-    plot.title = element_text(size = 20, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 10)),
+    plot.title = element_text(size = 20, hjust = 0.5, lineheight = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 0)),
     legend.position = "none",
     legend.title = element_text(size = 11, family = "opensans", face = "bold", margin = margin(b = -0.5)),
     legend.text = element_text(size = 10, face = "bold", family = "opensans", margin = margin(t = 2)),
@@ -562,7 +567,7 @@ school_connect_graph <- ggplot() +
 ggsave(
   "figures/school_connect_graph.png",
   plot = school_connect_graph,
-  width = 6.5, height = 6.5, dpi = 300,
+  width = 5, height = 5, dpi = 300,
   bg = "transparent"
 )
 
