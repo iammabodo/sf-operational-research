@@ -568,7 +568,7 @@ ggsave(
   "figures/school_connect_graph.png",
   plot = school_connect_graph,
   width = 5, height = 5, dpi = 300,
-  bg = "transparent"
+  bg = "white"
 )
 
 

@@ -60,7 +60,12 @@ new_costs <- supplier_costs %>%
   distinct(procurement, .keep_all = T) %>%
   select(procurement, wetcosts, wetsuppliers, drycosts, drysuppliers) %>% 
   mutate(total_wet_costs = wetcosts * wetsuppliers,
-         total_dry_costs = drycosts * drysuppliers)
+         total_dry_costs = drycosts * drysuppliers,
+         procurement = case_when(
+           procurement == "Commune Centralisation" ~ "Commune Aggregation",
+           procurement == "District Centralisation" ~ "District Aggregation",
+           TRUE ~ "Current Model"
+         ))
 
 
 
@@ -99,9 +104,9 @@ districts_clipped_clean <- districts_clipped %>%
   select(District, Area_km2) %>% 
   left_join(Schools_n, by = "District") %>% 
   mutate(procurement = case_when(
-    District == "Ta Lou Senchey" ~ "Commune Centralisation",
-    District == "Phnum Kravanh" ~ "District Centralisation",
-    TRUE~ "Non-Procurement Pilots"
+    District == "Ta Lou Senchey" ~ "Commune Aggregation",
+    District == "Phnum Kravanh" ~ "District Aggregation",
+    TRUE~ "Current Model"
   )) %>%
   filter(District != "Krakor") %>% 
   group_by(procurement) %>%
@@ -130,7 +135,7 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
          procurement = str_wrap(procurement, width = 10)) %>% 
   ggplot(aes(x = fct_reorder(procurement,dry_cost_per_km2) , y = dry_cost_per_km2, fill = procurement)) +
   geom_bar(stat = "identity") +
-  scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
+  scale_fill_manual(values = c( "#56021F","#7D1C4A", "#F4CCE9")) +
   coord_flip() +
   geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) +
   geom_hline(yintercept = 54.5, color = "#56021F", linewidth = 0.25, linetype = "dashed") +
@@ -170,12 +175,12 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
     size = 0.25,
     arrow = arrow(type = "closed", length = unit(0.05, "inches"), ends = "last")
   ) +
-  labs(title = "Dry commodities costs per km², by procurement modality,\nper single supply",
+  labs(title = "District Aggregation Reduces Dry Commodities Supply\nCosts per km² by 35% compared to the Current Model",
        x = "",
        y = "") +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(family = "opensans", size = 22, lineheight = 0.6, color = "#56021F", face = "bold", hjust = 0),
+        plot.title = element_text(family = "opensans", size = 24, lineheight = 0.6, color = "#56021F", face = "bold", hjust = 0),
         plot.title.position = "plot",
         plot.background = element_rect(fill = "#E0F0E1", colour = "#E0F0E1"),
         axis.text.y = element_text(family = "opensans", size = 18, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
@@ -190,12 +195,12 @@ ggsave("figures/adjusted_dry_costs_graph.png", adjusted_dry_costs_graph, width =
 
 adjusted_wet_costs_graph <- adjusted_costs_data %>% 
   mutate(wet_cost_per_km2 = Wet_cost_per_km2 * 100,
-         procurement = if_else(procurement == "Non-Procurement Pilots", "Non-Procurement Districts", procurement),
+         procurement = if_else(procurement == "District Aggregation", "Multiple Suppliers at District", procurement),
          procurement = as_factor(procurement),
-         procurement = str_wrap(procurement, width = 10)) %>% 
+         procurement = str_wrap(procurement, width = 12)) %>% 
   ggplot(aes(x = fct_reorder(procurement,wet_cost_per_km2) , y = wet_cost_per_km2, fill = procurement)) +
   geom_bar(stat = "identity") +
-  scale_fill_manual(values = c( "#56021F", "#F4CCE9","#7D1C4A")) +
+  scale_fill_manual(values = c( "#56021F","#7D1C4A", "#F4CCE9")) +
   scale_y_continuous(labels = function(x) ifelse(x == 0, "0", paste0(comma_format()(x), "¢"))) +
   geom_hline(yintercept = 0, color = "#56021F", linewidth = 0.5) +
   geom_hline(yintercept = 28.2, color = "#56021F", linewidth = 0.25, linetype = "dashed") + 
@@ -235,12 +240,12 @@ adjusted_wet_costs_graph <- adjusted_costs_data %>%
   geom_point(aes(x = 1, y = 13.8), color = "#56021F", size = 1) +
   geom_point(aes(x = 1, y = 23), color = "#56021F", size = 1) +
   geom_rect(aes(xmin = 0.55, xmax = 1.45, ymin = 8, ymax = 28.2), fill = "#F4CCE9", alpha = 0.12, color = NA) +
-  labs(title = "Wet Commodities costs per km², by procurement modality,\nper single supply",
+  labs(title = "Using Multiple District Suppliers Reduces Wet\nCommodities Supply Costs by 71% compared to the\nCurrent Model",
        x = "",
-       y = "") +
+       y = "Costs per square km") +
   theme_minimal() +
   theme(legend.position = "none",
-        plot.title = element_text(family = "opensans", size = 22, colour = "#56021F", 
+        plot.title = element_text(family = "opensans", size = 24, colour = "#56021F", 
                                   face = "bold", hjust = 0, lineheight = 0.6),
         plot.title.position = "plot",
         plot.background = element_rect(fill = "#E0F0E1", colour = "#E0F0E1"),
