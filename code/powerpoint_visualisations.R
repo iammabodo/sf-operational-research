@@ -462,7 +462,7 @@ districts_sf <- districts_sf %>%
   filter(
     !(District %in% c("Bakan", "Krakor", "Kandieng"))
   )
-remote_schools <- "One of the most\n'inaccessible' schools,\n(Or Soam), is the biggest\nbeneficiary of district\ncentralisation"
+remote_schools <- "One of the most\n'inaccessible' schools,\n(Or Soam), is the biggest\nbeneficiary of district\naggregation"
 school_connect_graph <- ggplot() + 
   geom_sf(data = districts_sf, fill  = "#202040", color = "#E8F9FD", size = 1.5) +
   #geom_sf(data = water_in_boundaries, fill = "#478CCF", color = "#478CCF") + 
@@ -580,14 +580,14 @@ clean_bdd <- annual_breakdowndays %>%
   mutate(change_percent = abs(change_percent)) %>% 
   pivot_longer(cols = c(`2023`, `2024`), names_to = "year", values_to = "breakdown_days") %>% 
   mutate(pilot = case_when(
-    pilot == "Commune Centralisation" ~  "Commune\nCentralisation\n(Ta Lou Senchey)",
-    pilot == "District Centralisation" ~ "District\nCentralisation\n(Phnum Kravanh)",
-    pilot == "Non-Pilot" ~ "Non-Pilot\n(All other HGSF\ndistricts)"
+    pilot == "Commune Centralisation" ~  "Commune\nAggregation\n(Ta Lou Senchey)",
+    pilot == "District Centralisation" ~ "District\nAggregation\n(Phnum Kravanh)",
+    pilot == "Non-Pilot" ~ "Current Model\n(All other HGSF\ndistricts)"
   )) %>%
   mutate(year = factor(year, levels = c("2023", "2024")),
-         pilot = factor(pilot, levels = c("Non-Pilot\n(All other HGSF\ndistricts)", 
-                                          "Commune\nCentralisation\n(Ta Lou Senchey)", 
-                                          "District\nCentralisation\n(Phnum Kravanh)")))
+         pilot = factor(pilot, levels = c("Current Model\n(All other HGSF\ndistricts)", 
+                                          "Commune\nAggregation\n(Ta Lou Senchey)", 
+                                          "District\nAggregation\n(Phnum Kravanh)")))
 
 kravanh_clean <- connected_kravanh %>% 
   select(-change) %>%
@@ -604,40 +604,84 @@ complete_bdd <- kravanh_clean %>%
 
 
 
-bbdays_heatmap <- ggplot(clean_bdd, aes(x = year, y = pilot, fill = breakdown_days)) +
+bbdays_heatmap_1 <- clean_bdd %>% 
+  filter(year == 2023) %>%
+  mutate(pilot = if_else(
+    pilot == "Commune\nAggregation\n(Ta Lou Senchey)", "Ta Lou Senchey\nDistrict", pilot
+  ),
+  pilot = if_else(pilot == "District\nAggregation\n(Phnum Kravanh)", "Phnum Kravanh\nDistrict", pilot),
+  pilot = if_else(pilot == "Current Model\n(All other HGSF\ndistricts)", "All other HGSF\ndistricts", pilot)) %>% 
+  mutate(pilot = factor(pilot, levels = c("All other HGSF\ndistricts", "Ta Lou Senchey\nDistrict",  "Phnum Kravanh\nDistrict"))) %>%
+  ggplot(aes(x = year, y = pilot, fill = breakdown_days)) +
   geom_tile() +
-  geom_text(aes(label = round(breakdown_days, 0)), color = if_else(clean_bdd$year == "2024", "#500073", "#D4EBF8"), size = 9,
+  geom_text(aes(label = round(breakdown_days, 0)), color =  "#D4EBF8", size = 9,
             family = "opensans", fontface = "bold") +
-  scale_fill_gradient(low = "#A1E3F9", high = "#2A004E") +
-  labs(title = "Average Breakdown Days by Procurement Model and\nAnnual School Year",
+  scale_fill_gradient(low = "#88accf", high = "#2A004E") +
+  labs(title = "Before the Pilot (2023)",
        fill = "Breakdown Days") +
   theme_minimal() + 
   theme(
     plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
-    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#2A004E", hjust = 0, lineheight = 0.5),
+    plot.title = element_text(family = "opensans", size = 24, face = "bold", colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
     plot.title.position = "plot",
     plot.subtitle = element_text(family = "opensans", size = 15, colour = "#2A004E", lineheight = 0.5, face = "bold.italic",
                                  margin = margin(b = 0)), 
     plot.caption = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0),
-    axis.text = element_text(family = "opensans", size = 18, colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    axis.text.y = element_text(family = "opensans", size = 22, colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    axis.text.x = element_blank(),
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     panel.grid = element_blank(),
     legend.position = "bottom",
-    legend.title = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0.5,
+    legend.title = element_text(family = "opensans", size = 18, colour = "#2A004E", hjust = 0.5,
                                 margin = margin(b = 1.5, t = 0)),
     legend.title.position = "top",
-    legend.text = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0.5),
+    legend.text = element_text(family = "opensans", size = 17, colour = "#2A004E", hjust = 0.5),
     legend.box.margin = margin(b = 0, t= -10),
     legend.key.height = unit(0.2, "cm"),
     legend.key.width = unit(1.2, "cm"),
-    plot.caption.position = "plot"
-  ) 
+    plot.caption.position = "plot")
 
-ggsave("figures/bbdays_heatmap.png", bbdays_heatmap, width = 5.4, 
+ggsave("figures/bbdays_heatmap_1.png", bbdays_heatmap_1, width = 4.37, 
        height = 4, dpi = 300, units = "in", device = "png", bg = "white")  
 
+bbdays_heatmap_2 <- clean_bdd %>% 
+  filter(year == 2024) %>%
+  mutate(pilot = factor(pilot, levels = c("Current Model\n(All other HGSF\ndistricts)",
+                                          "Commune\nAggregation\n(Ta Lou Senchey)",  
+                                          "District\nAggregation\n(Phnum Kravanh)"))) %>%
+  ggplot(aes(x = year, y = pilot, fill = breakdown_days)) +
+  geom_tile() +
+  geom_text(aes(label = round(breakdown_days, 0)), color =  "#2A004E", size = 9,
+            family = "opensans", fontface = "bold") +
+  scale_fill_gradient(low = "#a1e3f9", high = "#89afd2") +
+  labs(title = "After the Pilot (2024)",
+       fill = "Breakdown Days") +
+  theme_minimal() + 
+  theme(
+    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
+    plot.title = element_text(family = "opensans", size = 24, face = "bold", colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    plot.title.position = "plot",
+    plot.subtitle = element_text(family = "opensans", size = 15, colour = "#2A004E", lineheight = 0.5, face = "bold.italic",
+                                 margin = margin(b = 0)), 
+    plot.caption = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0),
+    axis.text.y = element_text(family = "opensans", size = 22, colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    axis.text.x = element_blank(),
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    panel.grid = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_text(family = "opensans", size = 18, colour = "#2A004E", hjust = 0.5,
+                                margin = margin(b = 1.5, t = 0)),
+    legend.title.position = "top",
+    legend.text = element_text(family = "opensans", size = 17, colour = "#2A004E", hjust = 0.5),
+    legend.box.margin = margin(b = 0, t= -10),
+    legend.key.height = unit(0.2, "cm"),
+    legend.key.width = unit(1.2, "cm"),
+    plot.caption.position = "plot")
 
+ggsave("figures/bbdays_heatmap_2.png", bbdays_heatmap_2, width = 4.37, 
+       height = 4, dpi = 300, units = "in", device = "png", bg = "white")
 # Percentage change heatmap
 
 bbdays_heatmap <- ggplot(clean_bdd %>% filter(year == 2024), aes(x = year, y = pilot, fill = change_percent)) +
@@ -645,31 +689,29 @@ bbdays_heatmap <- ggplot(clean_bdd %>% filter(year == 2024), aes(x = year, y = p
   geom_text(aes(label = paste0(round(change_percent, 0), "%")), color =  "#D4EBF8", size = 9,
             family = "opensans", fontface = "bold") +
   scale_fill_gradient(low = "#EAD196", high = "#7D0A0A") +
-  labs(title = "Percentage\nDecrease",
-       fill = "Percentage Change", y = "") +
+  labs(title = "Percentage Decrease in\nBreakdown Days",
+       fill = "Percentage Decrease", y = "") +
   theme_minimal() + 
   theme(
     plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
-    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#7D0A0A", hjust = 0, lineheight = 0.5),
+    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5),
     plot.title.position = "plot",
-    axis.text.y = element_blank(),
-    axis.text.x = element_text(family = "opensans", size = 18, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5,
-                              margin = margin(b = 45)),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(family = "opensans", size = 18, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5),
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     panel.grid = element_blank(),
-    legend.position = "right",
+    legend.position = "bottom",
     legend.title = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5,
-                                margin = margin(t = 1.5, b = 0)),
-    legend.title.position = "left",
+                                margin = margin(b = 1.5)),
+    legend.title.position = "top",
     legend.text = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5),
     legend.box.margin = margin(b = 0, l= -10),
-    legend.key.height = unit(0.9, "cm"),
-    legend.key.width = unit(0.2, "cm")) + 
-  guides(fill = guide_colourbar(title.theme = element_text(angle = 90)))
+    legend.key.height = unit(0.2, "cm"),
+    legend.key.width = unit(0.9, "cm")) 
   
 
-ggsave("figures/bbdays_heatmap_change.png", bbdays_heatmap, width = 1.7, 
+ggsave("figures/bbdays_heatmap_change.png", bbdays_heatmap, width = 3.2, 
        height = 4, dpi = 300, units = "in", device = "png", bg = "white")
 
 ##################################################################################################
@@ -677,6 +719,7 @@ ggsave("figures/bbdays_heatmap_change.png", bbdays_heatmap, width = 1.7,
 #Kravanh Breakdown Days
 
 kravanh_graph <- kravanh_clean %>% 
+  mutate(year = if_else(year == "2023", "2023\n(Baseline)", "2024\n(After Pilot)")) %>%
   ggplot(aes(x = year, y = pilot, fill = breakdown_days)) +
   geom_tile() +
   geom_text(aes(label = round(breakdown_days, 0)), color = if_else(kravanh_clean$year == "2024", "#500073", "#D4EBF8"), size = 9,
@@ -707,8 +750,8 @@ kravanh_graph <- kravanh_clean %>%
     plot.caption.position = "plot"
   )
 
-ggsave("figures/kravanh_graph.png", kravanh_graph, width = 4.5, 
-       height = 2.5, dpi = 300, units = "in", device = "png", bg = "white")  
+ggsave("figures/kravanh_graph.png", kravanh_graph, width = 4.8, 
+       height = 4.8, dpi = 300, units = "in", device = "png", bg = "white")  
 
 
 # Kravan percentage change
@@ -720,8 +763,8 @@ kravanh_graph_heatmap <- kravanh_clean %>%
   geom_text(aes(label = paste0(round(change_percent, 0), "%")), color =  "#D4EBF8", size = 9,
             family = "opensans", fontface = "bold") +
   scale_fill_gradient(low = "#EAD196", high = "#7D0A0A") +
-  labs(title = "Percentage\nDecrease",
-       fill = "% Change", y = "") +
+  labs(title = "Percentage Decrease\nin Breakdown Days",
+       fill = "% Decrease", y = "") +
   theme_minimal() + 
   theme(
     plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
@@ -729,7 +772,7 @@ kravanh_graph_heatmap <- kravanh_clean %>%
     plot.title.position = "plot",
     axis.text.y = element_blank(),
     axis.text.x = element_text(family = "opensans", size = 18, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5,
-                              margin = margin(b = 45)),
+                              margin = margin(b = 55)),
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     panel.grid = element_blank(),
@@ -739,12 +782,12 @@ kravanh_graph_heatmap <- kravanh_clean %>%
     legend.title.position = "left",
     legend.text = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5),
     legend.box.margin = margin(b = 0, l= -10),
-    legend.key.height = unit(0.5, "cm"),
+    legend.key.height = unit(1.3, "cm"),
     legend.key.width = unit(0.2, "cm")) + 
   guides(fill = guide_colourbar(title.theme = element_text(angle = 90)))
 
-ggsave("figures/kravanh_graph_heatmap.png", kravanh_graph_heatmap, width = 1.7, 
-       height = 2.5, dpi = 300, units = "in", device = "png", bg = "white")
+ggsave("figures/kravanh_graph_heatmap.png", kravanh_graph_heatmap, width = 2.1, 
+       height = 4.8, dpi = 300, units = "in", device = "png", bg = "white")
 
 
 

@@ -177,14 +177,15 @@ adjusted_dry_costs_graph <- adjusted_costs_data %>%
   ) +
   labs(title = "District Aggregation Reduces Dry Commodities Supply\nCosts per km² by 35% compared to the Current Model",
        x = "",
-       y = "") +
+       y = "Costs Per Square km") +
   theme_minimal() +
   theme(legend.position = "none",
         plot.title = element_text(family = "opensans", size = 24, lineheight = 0.6, color = "#56021F", face = "bold", hjust = 0),
         plot.title.position = "plot",
-        plot.background = element_rect(fill = "#E0F0E1", colour = "#E0F0E1"),
+        plot.background = element_rect(fill = "white", colour = "white"),
         axis.text.y = element_text(family = "opensans", size = 18, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
         axis.text.x = element_text(family = "opensans", size = 18, face = "bold"),
+        axis.title = element_text(family = "opensans", size = 20, face = "bold"),
         panel.grid.major.y = element_blank(),
         panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_line(color = scales::alpha("grey", 0.5), size = 0.2, linetype = "dashed"),
@@ -195,7 +196,7 @@ ggsave("figures/adjusted_dry_costs_graph.png", adjusted_dry_costs_graph, width =
 
 adjusted_wet_costs_graph <- adjusted_costs_data %>% 
   mutate(wet_cost_per_km2 = Wet_cost_per_km2 * 100,
-         procurement = if_else(procurement == "District Aggregation", "Multiple Suppliers at District", procurement),
+         procurement = if_else(procurement == "District Aggregation", "District Aggregation (Multiple Suppliers)", procurement),
          procurement = as_factor(procurement),
          procurement = str_wrap(procurement, width = 12)) %>% 
   ggplot(aes(x = fct_reorder(procurement,wet_cost_per_km2) , y = wet_cost_per_km2, fill = procurement)) +
@@ -248,9 +249,10 @@ adjusted_wet_costs_graph <- adjusted_costs_data %>%
         plot.title = element_text(family = "opensans", size = 24, colour = "#56021F", 
                                   face = "bold", hjust = 0, lineheight = 0.6),
         plot.title.position = "plot",
-        plot.background = element_rect(fill = "#E0F0E1", colour = "#E0F0E1"),
+        plot.background = element_rect(fill = "white", colour = "white"),
         axis.text.y = element_text(family = "opensans", size = 18, hjust = 1, face = "bold", lineheight = 0.5, margin = margin(r = -15)),
         axis.text.x = element_text(family = "opensans", size = 18, face = "bold"),
+        axis.title = element_text(family = "opensans", size = 20, face = "bold"),
         panel.grid.major.y = element_blank(),
         panel.grid.minor.x = element_blank(),
         panel.grid.major.x = element_line(color = scales::alpha("#56021F", 0.1), size = 0.2, linetype = "dashed"),
