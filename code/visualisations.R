@@ -847,9 +847,12 @@ roads_in_boundaries <- st_intersection(roads, districts_sf) %>%
   filter(Classes == "Provincial and rural road")
 
 
-school_density_graph <- districts_sf %>% ggplot(aes(fill = school_density)) +
+school_density_graph <- districts_sf %>% 
+  filter(District %in% c("Phnum Kravanh", "Ta Lou Senchey")) %>% 
+  ggplot() +
   # District layer with school density
-  geom_sf(data = districts_sf, color = "white", size = 1.9) +
+  geom_sf(data = districts_sf %>% filter(District %in% c("Phnum Kravanh", "Ta Lou Senchey")), 
+          fill = "#240A34", color = "white", size = 1.9) +
   # School points layer
   geom_sf(data = schools_sf, size = 1, fill = "#240A34", alpha = 0.5, shape = 21) +
   #Add commune layer
