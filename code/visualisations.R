@@ -847,55 +847,75 @@ roads_in_boundaries <- st_intersection(roads, districts_sf) %>%
   filter(Classes == "Provincial and rural road")
 
 
-school_density_graph <- districts_sf %>% 
-  filter(District %in% c("Phnum Kravanh", "Ta Lou Senchey")) %>% 
+study_area_graph <- districts_sf %>% 
   ggplot() +
   # District layer with school density
-  geom_sf(data = districts_sf %>% filter(District %in% c("Phnum Kravanh", "Ta Lou Senchey")), 
-          fill = "#240A34", color = "white", size = 1.9) +
+  geom_sf(data = districts_sf, 
+          fill = if_else(districts_sf$District %in% c("Phnum Kravanh", "Ta Lou Senchey"), "#240A34", "#973131"), 
+          color = "white", size = 1.9) +
   # School points layer
-  geom_sf(data = schools_sf, size = 1, fill = "#240A34", alpha = 0.5, shape = 21) +
-  #Add commune layer
-  #geom_sf(data = communes_sf, fill = "transparent", color = "#FBF4DB", size = 0) +
-  # District names layer
-  geom_sf_text(data = districts_sf, aes(label = District), size = 3.5, fontface = "bold",
-               color = if_else(districts_sf$District == "Ta Lou Senchey", "white", "black"), family = "opensans") +
+  geom_sf(data = schools_sf, size = 1, color = "white", alpha = 0.5, shape = 21) +
+  geom_sf_text(data = districts_sf, aes(label = District), size = 10.5, fontface = "bold",
+               color =  "white", family = "opensans") +
   coord_sf(expand = FALSE) +
+  scale_x_continuous(limits = c(103, 105)) +
+  annotate(
+    "curve",
+    x = 103.8,
+    xend = 104.2,
+    y = 12.85,
+    yend = 12.9,
+    color = "#973131",
+    curvature = -0.2,
+    arrow = arrow(type = "closed", length = unit(0.1, "inches"), ends = "last")) +
+  annotate(
+    "segment",
+    x = 104.1,
+    xend = 104.2,
+    y = 12.78,
+    yend = 12.87,
+    color = "#973131",
+    arrow = arrow(type = "closed", length = unit(0.1, "inches"), ends = "last")) +
+  annotate(
+    "segment",
+    x = 104.2,
+    xend = 104.23,
+    y = 12.58,
+    yend = 12.85,
+    color = "#973131",
+    arrow = arrow(type = "closed", length = unit(0.1, "inches"), ends = "last")) +
+  annotate(
+    "text",
+    x = 104.22,
+    y = 12.9,
+    label = "Comparison\nDistricts",
+    color = "#973131",
+    size = 10,
+    hjust = 0,
+    lineheight = 0.6,
+    family = "opensans",
+    fontface = "bold") +
   # Water layer
  # geom_sf(data = water, fill = "#A6D6D6", color = "#A6D6D6") +
   # Custom color scale for school density
-  scale_fill_gradient(
-    name = "Schools/km²",
-    low = "#E0A75E", # Light yellow
-    high = "#973131", # Deep red
-    guide = guide_colorbar(
-      title.position = "top",
-      title.hjust = 0.5,
-      barwidth = 5, # Adjust bar width
-      barheight = 0.2 # Adjust bar height
-    )
-  ) +
   # Add labels and customize the plot
   labs(
-    title = "Panel (A): School Density"
+    title = ""
   ) +
   theme_void() +
-  annotation_scale(location = "bl", text_family = "serif", height = unit(0.10, "cm")) +
-  annotation_north_arrow(which_north = "grid",
-                         location    = "tl",
-                         style       = north_arrow_orienteering(text_family = "serif"),
-                         height      = unit(0.45, "cm"),
-                         width       = unit(0.45, "cm")) +
   theme(
     plot.title = element_text(size = 12, hjust = 0.5, family = "opensans", face = "bold", margin = margin(b = 2, t = 10)),
-    plot.subtitle = element_text(size = 12, hjust = 0.5),
-    legend.position = "bottom",
-    legend.title = element_text(size = 11, family = "opensans", face = "bold", margin = margin(b = 2)),
-    legend.text = element_text(size = 10, face = "bold", family = "opensans", margin = margin(t = 2)),
-    legend.box.margin = margin(t = 0),
-    plot.caption = element_text(size = 9, family = "opensans", hjust = 0),
-    plot.caption.position = "plot"
+    plot.margin = margin(0, 0, 0, 0)
   )
+
+
+ggsave(
+  "figures/study_area_graph.png",
+  plot = study_area_graph,
+  width = 20, height = 10, dpi = 300,
+  bg = "white"
+)
+
 
 
 #########################################################################################
