@@ -1120,7 +1120,7 @@ water_in_province_boundaries <- st_intersection(water, provincial_boundaries) %>
 
 # Graph for school connectedness and density by province
 school_connection <- ggplot() +
-  geom_sf(data = district_filtered, fill = "#071952", color = "white", linewidth = 0.1) +
+  geom_sf(data = district_filtered, fill = "#19376D", color = "white", linewidth = 0.1) +
   geom_sf(data = province_filtered, fill = NA, color = "white", linewidth = 0.5) +  # Province boundaries
     # District boundaries
   geom_sf(data = roads_in_province_boundaries, color = "#B5651D", linewidth = 0.25, alpha = 0.5) +  # Roads

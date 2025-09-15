@@ -10,10 +10,14 @@ library(ggspatial)
 
 ########################################################################
 #Text for the graphs - setting the defalts
-font_add_google("Open Sans","opensans")
-font_add_google("EB Garamond","garamond")
+# Add multiple font weights from Google Fonts
+font_add_google("Open Sans", "opensans_regular", regular.wt = 400)   # Normal
+font_add_google("Open Sans", "opensans_light", regular.wt = 300)     # Light
+font_add_google("Open Sans", "opensans_semibold", regular.wt = 600)  # Semi-Bold
+font_add_google("Open Sans", "opensans_bold", regular.wt = 700)      # Bold
+font_add_google("Open Sans", "opensans_extrabold", regular.wt = 800) # Extra-Bold
+showtext_opts(dpi = 300)
 showtext_auto()
-showtext_opts(dpi = 200)
 ########################################################################
 
 # 1. Continous Supply of Commodities
@@ -601,118 +605,130 @@ complete_bdd <- kravanh_clean %>%
   rbind(clean_bdd)
 
 
-
-
-
 bbdays_heatmap_1 <- clean_bdd %>% 
   filter(year == 2023) %>%
   mutate(pilot = if_else(
-    pilot == "Commune\nAggregation\n(Ta Lou Senchey)", "Ta Lou Senchey\nDistrict", pilot
+    pilot == "Commune\nAggregation\n(Ta Lou Senchey)", "Ta Lou\nSenchey\nDistrict", pilot
   ),
-  pilot = if_else(pilot == "District\nAggregation\n(Phnum Kravanh)", "Phnum Kravanh\nDistrict", pilot),
-  pilot = if_else(pilot == "Current Model\n(All other HGSF\ndistricts)", "All other HGSF\ndistricts", pilot)) %>% 
-  mutate(pilot = factor(pilot, levels = c("All other HGSF\ndistricts", "Ta Lou Senchey\nDistrict",  "Phnum Kravanh\nDistrict"))) %>%
+  pilot = if_else(pilot == "District\nAggregation\n(Phnum Kravanh)", "Phnum\nKravanh\nDistrict", pilot),
+  pilot = if_else(pilot == "Current Model\n(All other HGSF\ndistricts)", "All other\nHGSF\ndistricts", pilot)) %>% 
+  mutate(pilot = factor(pilot, levels = c("All other\nHGSF\ndistricts", "Ta Lou\nSenchey\nDistrict",  "Phnum\nKravanh\nDistrict"))) %>%
   ggplot(aes(x = year, y = pilot, fill = breakdown_days)) +
-  geom_tile() +
-  geom_text(aes(label = round(breakdown_days, 0)), color =  "#D4EBF8", size = 9,
-            family = "opensans", fontface = "bold") +
+  geom_tile(colour = "white", linewidth = 0.5) +
+  geom_text(aes(label = round(breakdown_days, 0)), color =  "white", size = 4,
+            family = "opensans_extrabold", fontface = "bold") +
   scale_fill_gradient(low = "#88accf", high = "#2A004E") +
-  labs(title = "Before the Pilot (2023)",
+  labs(title = "Before the\nPilot (2023)",
        fill = "Breakdown Days") +
   theme_minimal() + 
   theme(
-    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
-    plot.title = element_text(family = "opensans", size = 24, face = "bold", colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    plot.background = element_rect(fill = "white", color = "white"),
+    plot.title = element_text(family = "opensans_extrabold", size = 10,  colour = "#2A004E", hjust = 0.5, lineheight = 0.7),
     plot.title.position = "plot",
     plot.subtitle = element_text(family = "opensans", size = 15, colour = "#2A004E", lineheight = 0.5, face = "bold.italic",
                                  margin = margin(b = 0)), 
-    plot.caption = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0),
-    axis.text.y = element_text(family = "opensans", size = 22, colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    plot.caption = element_text(family = "opensans_light", size = 10, colour = "#2A004E", hjust = 0),
+    axis.text.y = element_text(family = "opensans_extrabold", size = 7, colour = "#2A004E", hjust = 1, lineheight = 0.7,
+                               margin = margin(r = -3)),
     axis.text.x = element_blank(),
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     panel.grid = element_blank(),
     legend.position = "bottom",
-    legend.title = element_text(family = "opensans", size = 18, colour = "#2A004E", hjust = 0.5,
+    legend.title = element_text(family = "opensans_extrabold", size = 6, colour = "#2A004E", hjust = 0.5,
                                 margin = margin(b = 1.5, t = 0)),
     legend.title.position = "top",
-    legend.text = element_text(family = "opensans", size = 17, colour = "#2A004E", hjust = 0.5),
-    legend.box.margin = margin(b = 0, t= -10),
-    legend.key.height = unit(0.2, "cm"),
-    legend.key.width = unit(1.2, "cm"),
+    legend.text = element_text(family = "opensans_light", size = 5, colour = "#2A004E", hjust = 0.5,
+                               margin = margin(t = 2)),
+    legend.box.margin = margin(b = 0, t= -10, l = -10, r = 0),
+    legend.key.height = unit(0.07, "cm"),
+    legend.key.width = unit(0.4, "cm"),
     plot.caption.position = "plot")
 
-ggsave("figures/bbdays_heatmap_1.png", bbdays_heatmap_1, width = 4.37, 
-       height = 4, dpi = 300, units = "in", device = "png", bg = "white")  
+ggsave("figures/bbdays_heatmap_11.png", bbdays_heatmap_1, width = 1.21, 
+       height = 1.97, dpi = 300, units = "in", device = "png", bg = "white")  
 
 bbdays_heatmap_2 <- clean_bdd %>% 
   filter(year == 2024) %>%
-  mutate(pilot = factor(pilot, levels = c("Current Model\n(All other HGSF\ndistricts)",
-                                          "Commune\nAggregation\n(Ta Lou Senchey)",  
-                                          "District\nAggregation\n(Phnum Kravanh)"))) %>%
+  mutate(pilot = if_else(
+    pilot == "Commune\nAggregation\n(Ta Lou Senchey)", "Ta Lou\nSenchey\nDistrict", pilot
+  ),
+  pilot = if_else(pilot == "District\nAggregation\n(Phnum Kravanh)", "Phnum\nKravanh\nDistrict", pilot),
+  pilot = if_else(pilot == "Current Model\n(All other HGSF\ndistricts)", "All other\nHGSF\ndistricts", pilot)) %>% 
+  mutate(pilot = factor(pilot, levels = c("All other\nHGSF\ndistricts", "Ta Lou\nSenchey\nDistrict",  "Phnum\nKravanh\nDistrict"))) %>%
   ggplot(aes(x = year, y = pilot, fill = breakdown_days)) +
-  geom_tile() +
-  geom_text(aes(label = round(breakdown_days, 0)), color =  "#2A004E", size = 9,
-            family = "opensans", fontface = "bold") +
+  geom_tile(colour = "white", linewidth = 0.5) +
+  geom_text(aes(label = round(breakdown_days, 0)), color =  "#2A004E", size = 4,
+            family = "opensans_extrabold") +
   scale_fill_gradient(low = "#a1e3f9", high = "#89afd2") +
-  labs(title = "After the Pilot (2024)",
+  labs(title = "After the\nPilot (2024)",
        fill = "Breakdown Days") +
   theme_minimal() + 
   theme(
-    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
-    plot.title = element_text(family = "opensans", size = 24, face = "bold", colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    plot.background = element_rect(fill = "white", color = "white"),
+    plot.title = element_text(family = "opensans_extrabold", size = 10,  colour = "#2A004E", hjust = 0.5, lineheight = 0.7),
     plot.title.position = "plot",
     plot.subtitle = element_text(family = "opensans", size = 15, colour = "#2A004E", lineheight = 0.5, face = "bold.italic",
                                  margin = margin(b = 0)), 
-    plot.caption = element_text(family = "opensans", size = 15, colour = "#2A004E", hjust = 0),
-    axis.text.y = element_text(family = "opensans", size = 22, colour = "#2A004E", hjust = 0.5, lineheight = 0.5),
+    plot.caption = element_text(family = "opensans_light", size = 10, colour = "#2A004E", hjust = 0),
+    axis.text.y = element_text(family = "opensans_extrabold", size = 7, colour = "#2A004E", hjust = 1, lineheight = 0.7,
+                               margin = margin(r = -3)),
     axis.text.x = element_blank(),
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     panel.grid = element_blank(),
     legend.position = "bottom",
-    legend.title = element_text(family = "opensans", size = 18, colour = "#2A004E", hjust = 0.5,
+    legend.title = element_text(family = "opensans_extrabold", size = 6, colour = "#2A004E", hjust = 0.5,
                                 margin = margin(b = 1.5, t = 0)),
     legend.title.position = "top",
-    legend.text = element_text(family = "opensans", size = 17, colour = "#2A004E", hjust = 0.5),
-    legend.box.margin = margin(b = 0, t= -10),
-    legend.key.height = unit(0.2, "cm"),
-    legend.key.width = unit(1.2, "cm"),
+    legend.text = element_text(family = "opensans_light", size = 5, colour = "#2A004E", hjust = 0.5,
+                               margin = margin(t = 2)),
+    legend.box.margin = margin(b = 0, t= -10, l = -10, r = 0),
+    legend.key.height = unit(0.07, "cm"),
+    legend.key.width = unit(0.4, "cm"),
     plot.caption.position = "plot")
 
-ggsave("figures/bbdays_heatmap_2.png", bbdays_heatmap_2, width = 4.37, 
-       height = 4, dpi = 300, units = "in", device = "png", bg = "white")
+ggsave("figures/bbdays_heatmap_22.png", bbdays_heatmap_2, width = 1.21, 
+       height = 1.97, dpi = 300, units = "in", device = "png", bg = "white")
 # Percentage change heatmap
 
-bbdays_heatmap <- ggplot(clean_bdd %>% filter(year == 2024), aes(x = year, y = pilot, fill = change_percent)) +
-  geom_tile() +
-  geom_text(aes(label = paste0(round(change_percent, 0), "%")), color =  "#D4EBF8", size = 9,
-            family = "opensans", fontface = "bold") +
+bbdays_heatmap <- ggplot(clean_bdd %>% filter(year == 2024) %>% 
+                           mutate(pilot = if_else(
+                             pilot == "Commune\nAggregation\n(Ta Lou Senchey)", "Ta Lou\nSenchey\nDistrict", pilot
+                           ),
+                           pilot = if_else(pilot == "District\nAggregation\n(Phnum Kravanh)", "Phnum\nKravanh\nDistrict", pilot),
+                           pilot = if_else(pilot == "Current Model\n(All other HGSF\ndistricts)", "All other\nHGSF\ndistricts", pilot)) %>% 
+                           mutate(pilot = factor(pilot, levels = c("All other\nHGSF\ndistricts", "Ta Lou\nSenchey\nDistrict",  "Phnum\nKravanh\nDistrict"))), 
+                         aes(x = year, y = pilot, fill = change_percent)) +
+  geom_tile(colour = "white", linewidth = 0.5) +
+  geom_text(aes(label = paste0(round(change_percent, 0), "%")), color =  "white", size = 4,
+            family = "opensans_extrabold", fontface = "bold") +
   scale_fill_gradient(low = "#EAD196", high = "#7D0A0A") +
-  labs(title = "Percentage Decrease in\nBreakdown Days",
-       fill = "Percentage Decrease", y = "") +
+  labs(title = "Percentage\nDecrease",
+       fill = "% Decrease", y = "") +
   theme_minimal() + 
   theme(
-    plot.background = element_rect(fill = "#F6F8EE", color = "#F6F8EE"),
-    plot.title = element_text(family = "opensans", size = 20, face = "bold", colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5),
+    plot.background = element_rect(fill = "white", color = "white"),
+    plot.title = element_text(family = "opensans_extrabold", size = 10, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.7),
     plot.title.position = "plot",
-    axis.text.x = element_blank(),
-    axis.text.y = element_text(family = "opensans", size = 18, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.5),
+    axis.text = element_blank(),
+    #axis.text.y = element_text(family = "opensans_extrabold", size = 7, colour = "#7D0A0A", hjust = 0.5, lineheight = 0.7),
     axis.title = element_blank(),
     axis.ticks = element_blank(),
     panel.grid = element_blank(),
     legend.position = "bottom",
-    legend.title = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5,
+    legend.title = element_text(family = "opensans_extrabold", size = 6, colour = "#7D0A0A", hjust = 0.5,
                                 margin = margin(b = 1.5)),
     legend.title.position = "top",
-    legend.text = element_text(family = "opensans", size = 15, colour = "#7D0A0A", hjust = 0.5),
-    legend.box.margin = margin(b = 0, l= -10),
-    legend.key.height = unit(0.2, "cm"),
-    legend.key.width = unit(0.9, "cm")) 
+    legend.text = element_text(family = "opensans_light", size = 5, colour = "#7D0A0A", 
+                               hjust = 0.5, margin = margin(t = 2)),
+    legend.box.margin = margin(b = 0, t= -10, l = -10, r = 0),
+    legend.key.height = unit(0.07, "cm"),
+    legend.key.width = unit(0.4, "cm")) 
   
 
-ggsave("figures/bbdays_heatmap_change.png", bbdays_heatmap, width = 3.2, 
-       height = 4, dpi = 300, units = "in", device = "png", bg = "white")
+ggsave("figures/bbdays_heatmap_change11.png", bbdays_heatmap, width = 1, 
+       height = 1.97, dpi = 300, units = "in", device = "png", bg = "white")
 
 ##################################################################################################
 
